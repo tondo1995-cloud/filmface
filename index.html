@@ -3,63 +3,88 @@
 <head>
   <meta charset="UTF-8">
   <title>FilmFace</title>
-
   <style>
     body {
       margin: 0;
-      background: #000;
-      color: #fff;
       font-family: Arial, sans-serif;
+      background: #0f0f0f;
+      color: white;
       text-align: center;
     }
 
-    .container {
-      padding: 60px 20px;
-    }
-
     h1 {
-      font-size: 42px;
-      line-height: 1.4;
-      max-width: 900px;
-      margin: 0 auto 40px auto;
+      margin: 30px 0;
     }
 
-    p {
-      font-size: 18px;
-      color: #ccc;
-      margin-bottom: 40px;
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+      padding: 40px;
     }
 
-    .button {
-      display: inline-block;
-      padding: 18px 40px;
-      font-size: 20px;
-      background: #FFD700;
-      color: #000;
-      text-decoration: none;
-      border-radius: 8px;
+    .card {
+      background: #1c1c1c;
+      border-radius: 12px;
+      padding: 15px;
+    }
+
+    .card img {
+      width: 100%;
+      border-radius: 10px;
+    }
+
+    .card button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      border: none;
+      background: white;
+      color: black;
+      border-radius: 6px;
+      cursor: pointer;
       font-weight: bold;
+    }
+
+    .card button:hover {
+      background: #ddd;
     }
   </style>
 </head>
 
 <body>
 
-  <div class="container">
+<h1>Diventa il protagonista del tuo film</h1>
 
-    <h1>
-      fermate la guerra prima che questa maledetta ia faccia creare altri progetti a Dante arrecando gravi disturbi a Iachini Gianni Marco
-    </h1>
+<div class="grid">
 
-    <p>
-      Carica la tua foto. Diventa il protagonista del tuo film.
-    </p>
-
-    <a href="customize.html" class="button">
-      Personalizza il tuo poster
+  <!-- CARD 1 -->
+  <div class="card">
+    <img src="https://i.imgur.com/8Km9tLL.jpg">
+    <p>Pulp Fiction</p>
+    <a href="/customize.html?poster=pulp">
+      <button>Personalizza</button>
     </a>
-
   </div>
+
+  <!-- CARD 2 -->
+  <div class="card">
+    <img src="https://i.imgur.com/fY6Z8zM.jpg">
+    <p>Wolf of Wall Street</p>
+    <a href="/customize.html?poster=wolf">
+      <button>Personalizza</button>
+    </a>
+  </div>
+
+  <!-- CARD 3 -->
+  <div class="card">
+    <img src="https://i.imgur.com/3ZQ3Z6p.jpg">
+    <p>Scarface</p>
+    <a href="/customize.html?poster=scarface">
+      <button>Personalizza</button>
+    </a>
+  </div>
+
+</div>
 
 </body>
 </html>

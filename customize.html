@@ -1,83 +1,234 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <title>Personalizza</title>
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Personalizza - FilmFace</title>
   <style>
     body {
       margin: 0;
-      background: #000;
-      color: #fff;
       font-family: Arial, sans-serif;
+      background: #0f0f0f;
+      color: white;
       text-align: center;
     }
 
     .container {
-      padding: 60px 20px;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
     }
 
     h1 {
-      font-size: 36px;
-      margin-bottom: 30px;
+      margin-bottom: 10px;
     }
 
-    input, button {
-      padding: 15px;
-      margin: 10px;
-      font-size: 16px;
-      border-radius: 6px;
+    p {
+      color: #bdbdbd;
+    }
+
+    .poster-preview {
+      margin: 30px auto;
+    }
+
+    .poster-preview img {
+      max-width: 320px;
+      width: 100%;
+      border-radius: 12px;
+      display: block;
+      margin: 0 auto;
+    }
+
+    .form-box {
+      background: #1b1b1b;
+      border-radius: 14px;
+      padding: 24px;
+      margin-top: 30px;
+    }
+
+    input[type="file"],
+    input[type="text"] {
+      width: 100%;
+      max-width: 420px;
+      padding: 14px;
+      margin: 10px auto;
+      border-radius: 8px;
       border: none;
-    }
-
-    input {
-      width: 300px;
-      max-width: 90%;
+      display: block;
+      font-size: 16px;
     }
 
     button {
-      background: #FFD700;
-      cursor: pointer;
+      margin-top: 16px;
+      padding: 14px 28px;
+      border: none;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #000000;
       font-weight: bold;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .status {
+      margin-top: 20px;
+      color: #d0d0d0;
+      min-height: 24px;
+    }
+
+    .result-box {
+      margin-top: 40px;
+    }
+
+    .result-box img {
+      max-width: 380px;
+      width: 100%;
+      border-radius: 12px;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-top: 24px;
+      color: #d0d0d0;
+      text-decoration: none;
+    }
+
+    .buy-box {
+      margin-top: 20px;
+      display: none;
+    }
+
+    .format-select {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
     }
   </style>
 </head>
-
 <body>
+  <div class="container">
+    <h1>Personalizza il tuo poster</h1>
+    <p id="posterTitle">Template selezionato</p>
 
-<div class="container">
+    <div class="poster-preview">
+      <img id="posterImage" src="" alt="Locandina selezionata" />
+    </div>
 
-  <h1>Inserisci il link della tua foto</h1>
+    <div class="form-box">
+      <input type="file" id="imageInput" accept="image/*" />
+      <input type="text" id="nameInput" placeholder="Nome attore da inserire" />
+      <button id="generateBtn">Genera anteprima</button>
+      <div class="status" id="status"></div>
+    </div>
 
-  <form id="form">
-    <input type="text" name="foto" placeholder="Link Google Drive / WeTransfer" required><br>
-    <input type="text" name="nome" placeholder="Nome attore" required><br>
-    <button type="submit">Invia richiesta</button>
-  </form>
+    <div class="result-box" id="resultBox" style="display:none;">
+      <h2>Anteprima</h2>
+      <img id="resultImage" src="" alt="Poster generato" />
 
-</div>
+      <div class="buy-box" id="buyBox">
+        <p>Scegli il formato</p>
+        <select class="format-select" id="formatSelect">
+          <option value="digital">Digitale - 19€</option>
+          <option value="a4">A4 - 29€ + 4,99€ sped.</option>
+          <option value="a3">A3 - 39€ + 4,99€ sped.</option>
+          <option value="a2">A2 - 49€ + 4,99€ sped.</option>
+        </select>
+        <div>
+          <button id="buyBtn">Conferma e acquista</button>
+        </div>
+      </div>
+    </div>
 
-<script>
-  const form = document.getElementById("form");
+    <a class="back-link" href="/">← Torna alla home</a>
+  </div>
 
-  form.addEventListener("submit", function(e) {
-    e.preventDefault();
-
-    const data = new FormData(form);
-
-    fetch("https://formspree.io/f/xgonrkoj", {
-      method: "POST",
-      body: data,
-      headers: {
-        'Accept': 'application/json'
+  <script>
+    const posters = {
+      pulp: {
+        title: "Pulp Fiction",
+        image: "https://i.imgur.com/8Km9tLL.jpg"
+      },
+      wolf: {
+        title: "Wolf of Wall Street",
+        image: "https://i.imgur.com/fY6Z8zM.jpg"
+      },
+      scarface: {
+        title: "Scarface",
+        image: "https://i.imgur.com/3ZQ3Z6p.jpg"
       }
-    }).then(() => {
-      window.location.href = "https://filmface.studio/thanks.html";
-    }).catch(() => {
-      alert("Errore invio. Riprova.");
-    });
-  });
-</script>
+    };
 
+    const params = new URLSearchParams(window.location.search);
+    const posterKey = params.get("poster") || "pulp";
+    const selectedPoster = posters[posterKey] || posters.pulp;
+
+    document.getElementById("posterTitle").textContent = selectedPoster.title;
+    document.getElementById("posterImage").src = selectedPoster.image;
+
+    const generateBtn = document.getElementById("generateBtn");
+    const statusEl = document.getElementById("status");
+    const resultBox = document.getElementById("resultBox");
+    const resultImage = document.getElementById("resultImage");
+    const buyBox = document.getElementById("buyBox");
+
+    generateBtn.addEventListener("click", async () => {
+      const imageFile = document.getElementById("imageInput").files[0];
+      const name = document.getElementById("nameInput").value.trim();
+
+      if (!imageFile) {
+        statusEl.textContent = "Carica una foto.";
+        return;
+      }
+
+      if (!name) {
+        statusEl.textContent = "Inserisci il nome.";
+        return;
+      }
+
+      generateBtn.disabled = true;
+      statusEl.textContent = "Sto generando l’anteprima...";
+
+      try {
+        const formData = new FormData();
+        formData.append("image", imageFile);
+        formData.append("name", name);
+
+        // per ora mandiamo anche il poster scelto come chiave
+        formData.append("posterKey", posterKey);
+
+        const response = await fetch("/api/generate", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Errore generazione");
+        }
+
+        resultImage.src = data.result;
+        resultBox.style.display = "block";
+        buyBox.style.display = "block";
+        statusEl.textContent = "Anteprima pronta.";
+      } catch (err) {
+        statusEl.textContent = err.message || "Errore durante la generazione.";
+      } finally {
+        generateBtn.disabled = false;
+      }
+    });
+
+    document.getElementById("buyBtn").addEventListener("click", () => {
+      const format = document.getElementById("formatSelect").value;
+      alert("Per ora qui collegheremo il checkout. Formato scelto: " + format);
+    });
+  </script>
 </body>
 </html>
