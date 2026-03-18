@@ -2,69 +2,38 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Personalizza</title>
-
+  <title>Grazie</title>
   <style>
     body {
-      margin: 0;
-      background: #000;
-      color: #fff;
+      background: black;
+      color: white;
       font-family: Arial, sans-serif;
       text-align: center;
+      padding: 100px 20px;
     }
-
-    .container {
-      padding: 60px 20px;
-    }
-
     h1 {
-      font-size: 36px;
-      margin-bottom: 30px;
+      font-size: 42px;
+      margin-bottom: 20px;
     }
-
-    input, button {
-      padding: 15px;
-      margin: 10px;
-      font-size: 16px;
-      border-radius: 6px;
-      border: none;
+    p {
+      font-size: 20px;
+      color: #ccc;
     }
-
-    input {
-      width: 300px;
-    }
-
-    button {
-      background: #FFD700;
-      cursor: pointer;
+    a {
+      display: inline-block;
+      margin-top: 30px;
+      padding: 16px 30px;
+      background: gold;
+      color: black;
+      text-decoration: none;
+      border-radius: 8px;
       font-weight: bold;
-    }
-
-    button:hover {
-      background: #e6c200;
     }
   </style>
 </head>
-
 <body>
-
-  <div class="container">
-
-    <h1>Inserisci il link della tua foto</h1>
-
-    <form action="https://formspree.io/f/xgonrkoj" method="POST">
-
-      <input type="hidden" name="_redirect" value="https://filmface.studio/thanks.html">
-
-      <input type="text" name="foto" placeholder="Link Google Drive / WeTransfer" required><br>
-
-      <input type="text" name="nome" placeholder="Nome attore" required><br>
-
-      <button type="submit">Invia richiesta</button>
-
-    </form>
-
-  </div>
-
+  <h1>Richiesta inviata</h1>
+  <p>Ti contatteremo a breve con il tuo poster personalizzato.</p>
+  <a href="https://filmface.studio">Torna alla home</a>
 </body>
 </html>
