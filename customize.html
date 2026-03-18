@@ -40,29 +40,44 @@
       cursor: pointer;
       font-weight: bold;
     }
-
-    button:hover {
-      background: #e6c200;
-    }
   </style>
 </head>
 
 <body>
 
-  <div class="container">
+<div class="container">
 
-    <h1>Inserisci il link della tua foto</h1>
+  <h1>Inserisci il link della tua foto</h1>
 
-    <form action="https://formspree.io/f/xgonrkoj" method="POST">
-      <input type="hidden" name="_redirect" value="https://filmface.studio/thanks.html">
+  <form id="form">
+    <input type="text" name="foto" placeholder="Link Google Drive / WeTransfer" required><br>
+    <input type="text" name="nome" placeholder="Nome attore" required><br>
+    <button type="submit">Invia richiesta</button>
+  </form>
 
-      <input type="text" name="foto" placeholder="Link Google Drive / WeTransfer" required><br>
-      <input type="text" name="nome" placeholder="Nome attore" required><br>
+</div>
 
-      <button type="submit">Invia richiesta</button>
-    </form>
+<script>
+  const form = document.getElementById("form");
 
-  </div>
+  form.addEventListener("submit", function(e) {
+    e.preventDefault();
+
+    const data = new FormData(form);
+
+    fetch("https://formspree.io/f/xgonrkoj", {
+      method: "POST",
+      body: data,
+      headers: {
+        'Accept': 'application/json'
+      }
+    }).then(() => {
+      window.location.href = "https://filmface.studio/thanks.html";
+    }).catch(() => {
+      alert("Errore invio. Riprova.");
+    });
+  });
+</script>
 
 </body>
 </html>
