@@ -7,8 +7,10 @@ import CustomContent from "./CustomPageContent";
 
 export default function CustomPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <CustomContent />
-    </Suspense>
+    <div style={{ minHeight: "100vh", background: "#0f0f0f" }}>
+      <Suspense fallback={<div style={{ color: "white", padding: 40 }}>Loading...</div>}>
+        <CustomContent />
+      </Suspense>
+    </div>
   );
 }

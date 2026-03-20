@@ -37,6 +37,11 @@ export default function CustomContent() {
     );
 
     const data = await res.json();
+
+    if (!data.secure_url) {
+      throw new Error("Upload fallito");
+    }
+
     return data.secure_url;
   };
 
@@ -44,16 +49,10 @@ export default function CustomContent() {
     if (!faceFile || !poster) return;
 
     setLoading(true);
+    setResult(null);
 
     try {
-      // Upload faccia
       const faceUrl = await uploadToCloudinary(faceFile);
-
-      // FIX IMPORTANTE: poster pubblico
-      const publicPosterUrl = `${window.location.origin}${poster}`;
-
-      console.log("FACE URL:", faceUrl);
-      console.log("POSTER URL:", publicPosterUrl);
 
       const res = await fetch("/api/generate/roop", {
         method: "POST",
@@ -62,36 +61,54 @@ export default function CustomContent() {
         },
         body: JSON.stringify({
           sourceImageUrl: faceUrl,
-          targetImageUrl: publicPosterUrl,
+          targetImageUrl: poster,
         }),
       });
 
       const data = await res.json();
 
-      console.log("API RESPONSE:", data);
+      let imageUrl: string | null = null;
 
-      let imageUrl =
-        data?.image ||
-        data?.output?.[0] ||
-        data?.data?.[0]?.url ||
-        data?.raw?.[0]?.url ||
-        null;
+      if (typeof data.image === "string") imageUrl = data.image;
+      else if (data.raw?.[0]?.url) imageUrl = data.raw[0].url;
 
-      if (!imageUrl) {
-        alert("Errore: nessuna immagine ricevuta");
+      if (imageUrl) {
+        setResult(imageUrl);
+      } else {
+        alert("Errore generazione");
       }
 
-      setResult(imageUrl);
     } catch (err) {
-      console.error("ERROR:", err);
+      console.error(err);
+      alert("Errore");
     }
 
     setLoading(false);
   };
 
+  const handleCheckout = async () => {
+    if (!result) return;
+
+    const res = await fetch("/api/checkout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ imageUrl: result }),
+    });
+
+    const data = await res.json();
+
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      alert("Errore pagamento");
+    }
+  };
+
   return (
     <div style={styles.page}>
-      <h1>Customize</h1>
+      <h1 style={styles.title}>Customize</h1>
 
       {poster && <img src={poster} style={styles.poster} />}
 
@@ -102,30 +119,18 @@ export default function CustomContent() {
 
       {preview && <img src={preview} style={styles.preview} />}
 
-      <button onClick={handleGenerate}>
+      <button style={styles.button} onClick={handleGenerate}>
         {loading ? "Generating..." : "Generate"}
       </button>
 
       {result && (
-        <>
-          <img src={result} style={styles.result} />
+        <div style={styles.result}>
+          <img src={result} style={styles.image} />
 
-          <a
-            href={result}
-            download
-            style={{
-              display: "inline-block",
-              marginTop: 10,
-              padding: 10,
-              background: "#00c853",
-              color: "white",
-              borderRadius: 8,
-              textDecoration: "none",
-            }}
-          >
-            Download Image
-          </a>
-        </>
+          <button style={styles.payButton} onClick={handleCheckout}>
+            Download HD – €2.99
+          </button>
+        </div>
       )}
     </div>
   );
@@ -135,17 +140,50 @@ const styles = {
   page: {
     padding: 40,
     textAlign: "center" as const,
+    background: "#0f0f0f",
+    minHeight: "100vh",
+    color: "white",
+  },
+  title: {
+    fontSize: 28,
+    marginBottom: 20,
   },
   poster: {
     width: 200,
     marginBottom: 20,
+    borderRadius: 10,
   },
   preview: {
     width: 150,
     marginTop: 10,
+    borderRadius: 8,
+  },
+  button: {
+    marginTop: 20,
+    padding: 12,
+    borderRadius: 10,
+    border: "none",
+    background: "#6c5cff",
+    color: "white",
+    cursor: "pointer",
+    width: 200,
   },
   result: {
+    marginTop: 30,
+  },
+  image: {
     width: 300,
-    marginTop: 20,
+    borderRadius: 10,
+  },
+  payButton: {
+    marginTop: 15,
+    padding: 12,
+    borderRadius: 10,
+    border: "none",
+    background: "#00c853",
+    color: "white",
+    cursor: "pointer",
+    width: 220,
+    fontSize: 16,
   },
 };
