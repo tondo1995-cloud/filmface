@@ -46,7 +46,14 @@ export default function CustomContent() {
     setLoading(true);
 
     try {
+      // Upload faccia
       const faceUrl = await uploadToCloudinary(faceFile);
+
+      // FIX IMPORTANTE: poster pubblico
+      const publicPosterUrl = `${window.location.origin}${poster}`;
+
+      console.log("FACE URL:", faceUrl);
+      console.log("POSTER URL:", publicPosterUrl);
 
       const res = await fetch("/api/generate/roop", {
         method: "POST",
@@ -55,20 +62,28 @@ export default function CustomContent() {
         },
         body: JSON.stringify({
           sourceImageUrl: faceUrl,
-          targetImageUrl: poster,
+          targetImageUrl: publicPosterUrl,
         }),
       });
 
       const data = await res.json();
 
-      let imageUrl = null;
+      console.log("API RESPONSE:", data);
 
-      if (typeof data.image === "string") imageUrl = data.image;
-      else if (data.raw?.[0]?.url) imageUrl = data.raw[0].url;
+      let imageUrl =
+        data?.image ||
+        data?.output?.[0] ||
+        data?.data?.[0]?.url ||
+        data?.raw?.[0]?.url ||
+        null;
+
+      if (!imageUrl) {
+        alert("Errore: nessuna immagine ricevuta");
+      }
 
       setResult(imageUrl);
     } catch (err) {
-      console.error(err);
+      console.error("ERROR:", err);
     }
 
     setLoading(false);
@@ -91,7 +106,27 @@ export default function CustomContent() {
         {loading ? "Generating..." : "Generate"}
       </button>
 
-      {result && <img src={result} style={styles.result} />}
+      {result && (
+        <>
+          <img src={result} style={styles.result} />
+
+          <a
+            href={result}
+            download
+            style={{
+              display: "inline-block",
+              marginTop: 10,
+              padding: 10,
+              background: "#00c853",
+              color: "white",
+              borderRadius: 8,
+              textDecoration: "none",
+            }}
+          >
+            Download Image
+          </a>
+        </>
+      )}
     </div>
   );
 }
