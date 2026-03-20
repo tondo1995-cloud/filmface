@@ -39,21 +39,29 @@ export default function CustomContent() {
     const data = await res.json();
 
     if (!data.secure_url) {
-      throw new Error("Upload fallito");
+      throw new Error("Upload fallito Cloudinary");
     }
 
     return data.secure_url;
   };
 
   const handleGenerate = async () => {
-    if (!faceFile || !poster) return;
+    if (!faceFile || !poster) {
+      alert("Seleziona immagine e poster");
+      return;
+    }
 
     setLoading(true);
     setResult(null);
 
     try {
+      // 🔥 1. upload volto su Cloudinary
       const faceUrl = await uploadToCloudinary(faceFile);
 
+      // 🔥 2. FIX CRITICO → poster URL completo
+      const fullPosterUrl = `${process.env.NEXT_PUBLIC_BASE_URL}${poster}`;
+
+      // 🔥 3. chiamata API
       const res = await fetch("/api/generate/roop", {
         method: "POST",
         headers: {
@@ -61,7 +69,7 @@ export default function CustomContent() {
         },
         body: JSON.stringify({
           sourceImageUrl: faceUrl,
-          targetImageUrl: poster,
+          targetImageUrl: fullPosterUrl,
         }),
       });
 
@@ -69,18 +77,22 @@ export default function CustomContent() {
 
       let imageUrl: string | null = null;
 
-      if (typeof data.image === "string") imageUrl = data.image;
-      else if (data.raw?.[0]?.url) imageUrl = data.raw[0].url;
+      if (typeof data.image === "string") {
+        imageUrl = data.image;
+      } else if (data.raw?.[0]?.url) {
+        imageUrl = data.raw[0].url;
+      }
 
       if (imageUrl) {
         setResult(imageUrl);
       } else {
+        console.error("❌ RISPOSTA API:", data);
         alert("Errore generazione");
       }
 
     } catch (err) {
-      console.error(err);
-      alert("Errore");
+      console.error("🔥 ERRORE:", err);
+      alert("Errore generazione");
     }
 
     setLoading(false);
@@ -110,7 +122,12 @@ export default function CustomContent() {
     <div style={styles.page}>
       <h1 style={styles.title}>Customize</h1>
 
-      {poster && <img src={poster} style={styles.poster} />}
+      {poster && (
+        <img
+          src={`${process.env.NEXT_PUBLIC_BASE_URL}${poster}`}
+          style={styles.poster}
+        />
+      )}
 
       <input
         type="file"
