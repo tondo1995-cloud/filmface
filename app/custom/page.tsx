@@ -1,9 +1,11 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+export const dynamic = "force-dynamic";
 
-export default function CustomPage() {
+import { Suspense, useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+
+function CustomContent() {
   const searchParams = useSearchParams();
   const poster = searchParams.get("poster");
 
@@ -12,7 +14,6 @@ export default function CustomPage() {
   const [result, setResult] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // preview faccia
   useEffect(() => {
     if (faceFile) {
       const url = URL.createObjectURL(faceFile);
@@ -38,37 +39,17 @@ export default function CustomPage() {
     );
 
     const data = await res.json();
-
-    if (!data.secure_url) {
-      throw new Error("Upload Cloudinary fallito");
-    }
-
     return data.secure_url;
   };
 
   const handleGenerate = async () => {
     if (!faceFile || !poster) return;
 
-    try {
-      setLoading(true);
-      setResult(null);
+    setLoading(true);
 
-      // 1. upload faccia
+    try {
       const faceUrl = await uploadToCloudinary(faceFile);
 
-      // 2. trasformo poster locale in file
-      const posterBlob = await fetch(poster).then((r) => r.blob());
-      const posterFile = new File([posterBlob], "poster.jpg", {
-        type: "image/jpeg",
-      });
-
-      // 3. upload poster su Cloudinary
-      const targetUrl = await uploadToCloudinary(posterFile);
-
-      console.log("FACE URL:", faceUrl);
-      console.log("POSTER URL:", targetUrl);
-
-      // 4. chiamata API
       const res = await fetch("/api/generate/roop", {
         method: "POST",
         headers: {
@@ -76,32 +57,20 @@ export default function CustomPage() {
         },
         body: JSON.stringify({
           sourceImageUrl: faceUrl,
-          targetImageUrl: targetUrl,
+          targetImageUrl: poster,
         }),
       });
 
       const data = await res.json();
 
-      console.log("FULL RESPONSE:", data);
+      let imageUrl = null;
 
-      let imageUrl: string | null = null;
+      if (typeof data.image === "string") imageUrl = data.image;
+      else if (data.raw?.[0]?.url) imageUrl = data.raw[0].url;
 
-      if (typeof data.image === "string") {
-        imageUrl = data.image;
-      } else if (Array.isArray(data.raw)) {
-        const first = data.raw[0];
-        if (typeof first === "string") imageUrl = first;
-        if (first?.url) imageUrl = first.url;
-      }
-
-      if (imageUrl) {
-        setResult(imageUrl);
-      } else {
-        alert("Errore output");
-      }
+      setResult(imageUrl);
     } catch (err) {
       console.error(err);
-      alert("Errore durante la generazione");
     }
 
     setLoading(false);
@@ -111,29 +80,29 @@ export default function CustomPage() {
     <div style={styles.page}>
       <h1>Customize</h1>
 
-      {/* poster selezionato */}
       {poster && <img src={poster} style={styles.poster} />}
 
-      {/* upload faccia */}
       <input
         type="file"
-        accept="image/*"
-        onChange={(e) =>
-          setFaceFile(e.target.files?.[0] || null)
-        }
+        onChange={(e) => setFaceFile(e.target.files?.[0] || null)}
       />
 
-      {/* preview */}
       {preview && <img src={preview} style={styles.preview} />}
 
-      {/* bottone */}
-      <button onClick={handleGenerate} style={styles.button}>
+      <button onClick={handleGenerate}>
         {loading ? "Generating..." : "Generate"}
       </button>
 
-      {/* risultato */}
       {result && <img src={result} style={styles.result} />}
     </div>
+  );
+}
+
+export default function CustomPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CustomContent />
+    </Suspense>
   );
 }
 
@@ -153,14 +122,5 @@ const styles = {
   result: {
     width: 300,
     marginTop: 20,
-  },
-  button: {
-    marginTop: 20,
-    padding: 12,
-    borderRadius: 8,
-    border: "none",
-    background: "#6c5cff",
-    color: "white",
-    cursor: "pointer",
   },
 };
