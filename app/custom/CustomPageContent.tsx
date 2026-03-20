@@ -55,13 +55,10 @@ export default function CustomContent() {
     setResult(null);
 
     try {
-      // 🔥 1. upload volto su Cloudinary
       const faceUrl = await uploadToCloudinary(faceFile);
 
-      // 🔥 2. FIX CRITICO → poster URL completo
       const fullPosterUrl = `${process.env.NEXT_PUBLIC_BASE_URL}${poster}`;
 
-      // 🔥 3. chiamata API
       const res = await fetch("/api/generate/roop", {
         method: "POST",
         headers: {
@@ -86,12 +83,12 @@ export default function CustomContent() {
       if (imageUrl) {
         setResult(imageUrl);
       } else {
-        console.error("❌ RISPOSTA API:", data);
+        console.error("❌ API:", data);
         alert("Errore generazione");
       }
 
     } catch (err) {
-      console.error("🔥 ERRORE:", err);
+      console.error(err);
       alert("Errore generazione");
     }
 
@@ -142,8 +139,20 @@ export default function CustomContent() {
 
       {result && (
         <div style={styles.result}>
-          <img src={result} style={styles.image} />
+          
+          {/* 🔥 PREVIEW BLOCCATA */}
+          <div style={styles.previewWrapper}>
+            <img
+              src={`${result}?q=30`}
+              style={styles.image}
+            />
 
+            <div style={styles.watermark}>
+              PREVIEW
+            </div>
+          </div>
+
+          {/* 💳 CTA PAGAMENTO */}
           <button style={styles.payButton} onClick={handleCheckout}>
             Download HD – €2.99
           </button>
@@ -188,9 +197,25 @@ const styles = {
   result: {
     marginTop: 30,
   },
+  previewWrapper: {
+    position: "relative" as const,
+    display: "inline-block",
+  },
   image: {
     width: 300,
     borderRadius: 10,
+    opacity: 0.6,
+  },
+  watermark: {
+    position: "absolute" as const,
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "white",
+    opacity: 0.9,
+    pointerEvents: "none" as const,
   },
   payButton: {
     marginTop: 15,
