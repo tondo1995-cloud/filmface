@@ -3,7 +3,7 @@ import sharp from "sharp";
 
 export const runtime = "nodejs";
 
-// 🔥 ESTRAZIONE URL REPLICATE (robusta)
+// 🔥 ESTRAZIONE URL REPLICATE
 function extractReplicateUrl(output: any): string | null {
   if (!output) return null;
 
@@ -80,7 +80,7 @@ async function applyWatermark(imageUrl: string): Promise<Buffer> {
 // 🔥 MAIN
 export async function POST(req: Request) {
   try {
-    const { sourceImageUrl, targetImageUrl } = await req.json();
+    const { sourceImageUrl, targetImageUrl, name } = await req.json();
 
     if (!sourceImageUrl || !targetImageUrl) {
       throw new Error("Missing images");
@@ -90,7 +90,7 @@ export async function POST(req: Request) {
       auth: process.env.REPLICATE_API_TOKEN!,
     });
 
-    // 🔥 STEP 1 — ROOP
+    // 🔥 STEP 1 — FACE SWAP
     const roopOutput = await replicate.run(
       "okaris/roop:8c1e100ecabb3151cf1e6c62879b6de7a4b84602de464ed249b6cff0b86211d8",
       {
@@ -109,19 +109,35 @@ export async function POST(req: Request) {
 
     console.log("ROOP OK:", roopImageUrl);
 
-    // 🔥 STEP 2 — FLUX
+    // 🔥 STEP 2 — FLUX (REMOVE + ADD NAME)
     const maskUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/masks/wolf-text-mask.png`;
+
+    const finalPrompt = name
+      ? `
+Remove the actor name at the top of the poster.
+
+Then insert this new name in the exact same position:
+"${name}"
+
+STRICT RULES:
+- Use the exact same font style (cinematic serif)
+- Same size, spacing and alignment
+- Same color and lighting
+- Must look like original movie poster text
+- Do NOT change anything else
+`
+      : `
+Remove the actor name at the top of the poster.
+Do NOT add any text.
+Keep everything identical.
+`;
 
     const prediction = await replicate.predictions.create({
       model: "black-forest-labs/flux-fill-pro",
       input: {
         image: roopImageUrl,
         mask: maskUrl,
-        prompt: `
-Remove the actor name at the top of the poster.
-Do NOT add any text.
-Keep everything identical.
-        `,
+        prompt: finalPrompt,
         steps: 50,
         guidance: 60,
         output_format: "jpg",
@@ -151,17 +167,16 @@ Keep everything identical.
 
     console.log("FLUX OK:", finalImageUrl);
 
-    // 🔥 STEP 3 — WATERMARK (preview)
+    // 🔥 STEP 3 — WATERMARK
     const watermarkedBuffer = await applyWatermark(finalImageUrl);
 
     const body = new Uint8Array(watermarkedBuffer);
 
-    // 🔥 RESPONSE
     return new Response(body, {
       headers: {
         "Content-Type": "image/jpeg",
         "Cache-Control": "no-store",
-        "x-hd-url": finalImageUrl, // 🔥 CRUCIALE
+        "x-hd-url": finalImageUrl,
       },
     });
 

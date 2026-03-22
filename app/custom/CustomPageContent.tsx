@@ -8,6 +8,7 @@ export default function CustomContent() {
   const poster = searchParams.get("poster");
 
   const [faceFile, setFaceFile] = useState<File | null>(null);
+  const [name, setName] = useState(""); // 🔥 RIPRISTINATO
   const [preview, setPreview] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [hdUrl, setHdUrl] = useState<string | null>(null);
@@ -57,8 +58,8 @@ export default function CustomContent() {
 
   // 🔥 GENERATE
   const handleGenerate = async () => {
-    if (!faceFile || !poster) {
-      alert("Inserisci immagine");
+    if (!faceFile || !poster || !name) {
+      alert("Inserisci immagine e nome");
       return;
     }
 
@@ -78,6 +79,7 @@ export default function CustomContent() {
         body: JSON.stringify({
           sourceImageUrl: faceUrl,
           targetImageUrl: fullPosterUrl,
+          name: name, // 🔥 PASSATO AL BACKEND
         }),
       });
 
@@ -90,7 +92,7 @@ export default function CustomContent() {
       const previewUrl = URL.createObjectURL(blob);
       setResult(previewUrl);
 
-      // 🔥 HD URL
+      // HD URL
       const hd = res.headers.get("x-hd-url");
 
       if (!hd) {
@@ -152,9 +154,19 @@ export default function CustomContent() {
           />
         )}
 
+        {/* FILE */}
         <input
           type="file"
           onChange={(e) => setFaceFile(e.target.files?.[0] || null)}
+        />
+
+        {/* 🔥 INPUT NOME */}
+        <input
+          type="text"
+          placeholder="Nome e cognome"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          style={styles.input}
         />
 
         {preview && <img src={preview} style={styles.preview} />}
@@ -213,6 +225,15 @@ const styles = {
     width: "100%",
     borderRadius: 12,
     marginBottom: 20,
+  },
+  input: {
+    marginTop: 10,
+    padding: 12,
+    borderRadius: 10,
+    border: "none",
+    background: "#1a1a22",
+    color: "white",
+    width: "100%",
   },
   preview: {
     width: 100,
