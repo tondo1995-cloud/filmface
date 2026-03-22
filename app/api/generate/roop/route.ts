@@ -36,46 +36,45 @@ async function applyText(imageBuffer: Buffer, name: string): Promise<Buffer> {
   const width = metadata.width!;
   const height = metadata.height!;
 
-  const fontSize = Math.floor(width * 0.06);
-  const top = Math.floor(height * 0.1);
+  const fontSize = Math.floor(width * 0.055);
+  const boxWidth = Math.floor(width * 0.7);
+  const boxHeight = Math.floor(fontSize * 1.5);
+
+  const left = Math.floor(width * 0.15);
+  const top = Math.floor(height * 0.08);
 
   const safeName = (name && name.trim() ? name : "NOME COGNOME")
     .toUpperCase()
     .replace(/&/g, "&amp;");
 
-  // 🔥 SVG SOLO DEL BLOCCO TESTO (NON full canvas)
-  const svg = `
-  <svg width="${width}" height="${fontSize * 2}">
-    <rect 
-      x="0" 
-      y="0" 
-      width="${width}" 
-      height="${fontSize * 1.6}" 
-      fill="#f5a623"
-    />
-
-    <text 
-      x="50%" 
-      y="50%" 
-      text-anchor="middle" 
-      dominant-baseline="middle"
-      fill="#111111"
-      font-size="${fontSize}"
-      font-family="Arial, Helvetica, sans-serif"
-      font-weight="700"
-      letter-spacing="2"
-    >
-      ${safeName}
-    </text>
-  </svg>
-  `;
+  // 🔥 SVG con viewBox (CRITICO)
+  const svg = Buffer.from(`
+    <svg width="${boxWidth}" height="${boxHeight}" viewBox="0 0 ${boxWidth} ${boxHeight}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100%" height="100%" fill="#f5a623"/>
+      
+      <text 
+        x="50%" 
+        y="50%" 
+        dominant-baseline="middle" 
+        text-anchor="middle"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="${fontSize}"
+        font-weight="700"
+        fill="#111111"
+        letter-spacing="2"
+      >
+        ${safeName}
+      </text>
+    </svg>
+  `);
 
   return await image
     .composite([
       {
-        input: Buffer.from(svg),
+        input: svg,
         top: top,
-        left: Math.floor(width * 0.15),
+        left: left,
+        blend: "over", // 🔥 IMPORTANTISSIMO
       },
     ])
     .jpeg({ quality: 95 })
