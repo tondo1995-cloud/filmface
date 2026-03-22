@@ -23,13 +23,8 @@ function extractReplicateUrl(output: any): string | null {
       }
     }
 
-    if (typeof output.url === "string" && output.url.startsWith("http")) {
-      return output.url;
-    }
-
-    if (typeof output.href === "string" && output.href.startsWith("http")) {
-      return output.href;
-    }
+    if (typeof output.url === "string") return output.url;
+    if (typeof output.href === "string") return output.href;
 
     if (typeof output.toString === "function") {
       const maybe = output.toString();
@@ -44,7 +39,7 @@ function extractReplicateUrl(output: any): string | null {
 
 export async function POST(req: Request) {
   try {
-    const { sourceImageUrl, targetImageUrl, name } = await req.json();
+    const { sourceImageUrl, targetImageUrl } = await req.json();
 
     if (!sourceImageUrl || !targetImageUrl) {
       throw new Error("Missing images");
@@ -65,73 +60,33 @@ export async function POST(req: Request) {
       }
     );
 
-    console.log("ROOP RAW:", roopOutput);
-
     const roopImageUrl = extractReplicateUrl(roopOutput);
 
     if (!roopImageUrl) {
       throw new Error("ROOP output non valido");
     }
 
-    console.log("ROOP URL:", roopImageUrl);
+    console.log("ROOP OK:", roopImageUrl);
 
-    // 👉 se non c’è nome → ritorna subito
-    if (!name || !String(name).trim()) {
-      return Response.json({
-        success: true,
-        image: roopImageUrl,
-      });
-    }
-
-    // 🔥 STEP 2 — FLUX
+    // 🔥 STEP 2 — FLUX (SOLO RIMOZIONE TESTO)
     const maskUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/masks/wolf-text-mask.png`;
-
-    const safeName = String(name).trim().toUpperCase();
-
-    const prompt = `
-Replace ONLY the actor name at the top of the poster with the text: "${safeName}".
-
-STRICT RULES:
-- Modify ONLY the top name text.
-- Keep EXACT same position and alignment.
-- Keep EXACT same bounding box width as original text.
-- DO NOT move, scale or shift the text block.
-
-TYPOGRAPHY:
-- Use identical font style (bold cinematic sans-serif).
-- Match font weight, thickness and proportions exactly.
-- Match original color precisely (warm yellow/orange).
-
-WIDTH CONTROL:
-- The new text MUST occupy the SAME WIDTH as the original.
-- If text is longer → reduce letter spacing (tracking).
-- If text is shorter → increase letter spacing.
-- Keep font size visually identical.
-
-VISUAL INTEGRATION:
-- Preserve lighting, glow, shadows and blending.
-- Text must look printed, not generated.
-
-REFERENCE:
-The result must visually match the width and style of "LEONARDO DICAPRIO".
-
-IMPORTANT:
-- Do NOT modify anything else.
-- Do NOT touch background, subject or layout.
-`;
-
-    console.log("FLUX INPUT:", {
-      image: roopImageUrl,
-      mask: maskUrl,
-      name: safeName,
-    });
 
     const prediction = await replicate.predictions.create({
       model: "black-forest-labs/flux-fill-pro",
       input: {
         image: roopImageUrl,
         mask: maskUrl,
-        prompt: prompt,
+        prompt: `
+Remove the actor name at the top of the poster.
+
+STRICT RULES:
+- Completely erase the text
+- Rebuild background naturally
+- Keep lighting and grain identical
+- Do NOT add any text
+
+Do NOT modify anything else.
+        `,
         steps: 50,
         guidance: 60,
         safety_tolerance: 2,
@@ -144,16 +99,14 @@ IMPORTANT:
     let result = prediction;
 
     while (result.status !== "succeeded") {
-      if (result.status === "failed" || result.status === "canceled") {
+      if (result.status === "failed") {
         console.error("FLUX FAILED:", result);
         throw new Error("Flux failed");
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((r) => setTimeout(r, 1000));
       result = await replicate.predictions.get(result.id);
     }
-
-    console.log("FLUX OUTPUT:", result.output);
 
     const finalImageUrl = extractReplicateUrl(result.output);
 
@@ -166,11 +119,11 @@ IMPORTANT:
       image: finalImageUrl,
     });
   } catch (error: any) {
-    console.error("🔥 FULL ERROR:", error);
+    console.error("🔥 ERROR:", error);
 
     return Response.json({
       success: false,
-      error: error?.message || "Errore generazione",
+      error: error.message,
     });
   }
 }
