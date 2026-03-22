@@ -36,33 +36,34 @@ async function applyText(imageBuffer: Buffer, name: string): Promise<Buffer> {
   const width = metadata.width!;
   const height = metadata.height!;
 
-  const top = Math.floor(height * 0.11);
   const fontSize = Math.floor(width * 0.06);
+  const top = Math.floor(height * 0.1);
 
   const safeName = (name && name.trim() ? name : "NOME COGNOME")
     .toUpperCase()
     .replace(/&/g, "&amp;");
 
+  // 🔥 SVG SOLO DEL BLOCCO TESTO (NON full canvas)
   const svg = `
-  <svg width="${width}" height="${height}">
+  <svg width="${width}" height="${fontSize * 2}">
     <rect 
-      x="${width * 0.15}" 
-      y="${top - fontSize * 0.9}" 
-      width="${width * 0.7}" 
-      height="${fontSize * 1.5}" 
+      x="0" 
+      y="0" 
+      width="${width}" 
+      height="${fontSize * 1.6}" 
       fill="#f5a623"
     />
 
     <text 
       x="50%" 
-      y="${top}" 
+      y="50%" 
       text-anchor="middle" 
       dominant-baseline="middle"
       fill="#111111"
       font-size="${fontSize}"
       font-family="Arial, Helvetica, sans-serif"
-      letter-spacing="2"
       font-weight="700"
+      letter-spacing="2"
     >
       ${safeName}
     </text>
@@ -70,7 +71,13 @@ async function applyText(imageBuffer: Buffer, name: string): Promise<Buffer> {
   `;
 
   return await image
-    .composite([{ input: Buffer.from(svg) }])
+    .composite([
+      {
+        input: Buffer.from(svg),
+        top: top,
+        left: Math.floor(width * 0.15),
+      },
+    ])
     .jpeg({ quality: 95 })
     .toBuffer();
 }
