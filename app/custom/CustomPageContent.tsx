@@ -8,10 +8,10 @@ export default function CustomContent() {
   const poster = searchParams.get("poster");
 
   const [faceFile, setFaceFile] = useState<File | null>(null);
+  const [name, setName] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [name, setName] = useState("");
 
   useEffect(() => {
     if (faceFile) {
@@ -48,7 +48,7 @@ export default function CustomContent() {
 
   const handleGenerate = async () => {
     if (!faceFile || !poster || !name) {
-      alert("Inserisci nome e immagine");
+      alert("Inserisci immagine e nome");
       return;
     }
 
@@ -57,7 +57,6 @@ export default function CustomContent() {
 
     try {
       const faceUrl = await uploadToCloudinary(faceFile);
-
       const fullPosterUrl = `${process.env.NEXT_PUBLIC_BASE_URL}${poster}`;
 
       const res = await fetch("/api/generate/roop", {
@@ -74,16 +73,10 @@ export default function CustomContent() {
 
       const data = await res.json();
 
-      let imageUrl: string | null = null;
-
-      if (typeof data.image === "string") {
-        imageUrl = data.image;
-      }
-
-      if (imageUrl) {
-        setResult(imageUrl);
+      if (data.image) {
+        setResult(data.image);
       } else {
-        console.error("❌ API:", data);
+        console.error(data);
         alert("Errore generazione");
       }
 
@@ -93,26 +86,6 @@ export default function CustomContent() {
     }
 
     setLoading(false);
-  };
-
-  const handleCheckout = async () => {
-    if (!result) return;
-
-    const res = await fetch("/api/checkout", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ imageUrl: result }),
-    });
-
-    const data = await res.json();
-
-    if (data.url) {
-      window.location.href = data.url;
-    } else {
-      alert("Errore pagamento");
-    }
   };
 
   return (
@@ -126,15 +99,11 @@ export default function CustomContent() {
         />
       )}
 
-      {/* 📸 UPLOAD */}
       <input
         type="file"
         onChange={(e) => setFaceFile(e.target.files?.[0] || null)}
       />
 
-      {preview && <img src={preview} style={styles.preview} />}
-
-      {/* ✍️ INPUT NOME */}
       <input
         type="text"
         placeholder="Nome e cognome"
@@ -143,22 +112,15 @@ export default function CustomContent() {
         style={styles.input}
       />
 
-      {/* 🚀 GENERATE */}
+      {preview && <img src={preview} style={styles.preview} />}
+
       <button style={styles.button} onClick={handleGenerate}>
         {loading ? "Generating..." : "Generate"}
       </button>
 
-      {/* 🎬 RISULTATO */}
       {result && (
         <div style={styles.result}>
-          <div style={styles.previewWrapper}>
-            <img src={`${result}?q=30`} style={styles.image} />
-            <div style={styles.watermark}>PREVIEW</div>
-          </div>
-
-          <button style={styles.payButton} onClick={handleCheckout}>
-            Download HD – €2.99
-          </button>
+          <img src={result} style={styles.image} />
         </div>
       )}
     </div>
@@ -188,11 +150,11 @@ const styles = {
     borderRadius: 8,
   },
   input: {
-    marginTop: 15,
+    marginTop: 10,
     padding: 10,
     borderRadius: 8,
     border: "none",
-    width: 220,
+    width: 200,
   },
   button: {
     marginTop: 20,
@@ -207,35 +169,8 @@ const styles = {
   result: {
     marginTop: 30,
   },
-  previewWrapper: {
-    position: "relative" as const,
-    display: "inline-block",
-  },
   image: {
     width: 300,
     borderRadius: 10,
-    opacity: 0.6,
-  },
-  watermark: {
-    position: "absolute" as const,
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "white",
-    opacity: 0.9,
-    pointerEvents: "none" as const,
-  },
-  payButton: {
-    marginTop: 15,
-    padding: 12,
-    borderRadius: 10,
-    border: "none",
-    background: "#00c853",
-    color: "white",
-    cursor: "pointer",
-    width: 220,
-    fontSize: 16,
   },
 };
