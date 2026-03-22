@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 
 const posters = [
   "/posters/dallas.jpg",
-  "/posters/oscar.jpg",
+  "/posters/wolf.jpg",
   "/posters/wanted.jpg",
   "/posters/netflix.jpg",
 ];
