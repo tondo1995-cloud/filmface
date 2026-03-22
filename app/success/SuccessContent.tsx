@@ -1,48 +1,131 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function SuccessContent() {
   const params = useSearchParams();
-  const image = params.get("image");
 
+  // 🔥 decode URL correttamente
+  const rawImage = params.get("image");
+  const image = rawImage ? decodeURIComponent(rawImage) : null;
+
+  const [loading, setLoading] = useState(true);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!image) {
+      setLoading(false);
+      return;
+    }
+
+    const loadImage = async () => {
+      try {
+        const res = await fetch(image);
+
+        if (!res.ok) {
+          throw new Error("Errore download immagine");
+        }
+
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+
+        setImageUrl(url);
+
+        // 🔥 download automatico (safe)
+        setTimeout(() => {
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "filmface-hd.jpg";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        }, 300);
+
+      } catch (err) {
+        console.error("DOWNLOAD ERROR:", err);
+      }
+
+      setLoading(false);
+    };
+
+    loadImage();
+
+    // cleanup memoria
+    return () => {
+      if (imageUrl) URL.revokeObjectURL(imageUrl);
+    };
+
+  }, [image]);
+
+  // 🔴 errore: niente immagine
   if (!image) {
-    return <div>Nessuna immagine trovata</div>;
+    return (
+      <div style={styles.page}>
+        <h1>Nessuna immagine trovata</h1>
+        <p style={{ opacity: 0.7 }}>
+          Torna indietro e genera una nuova immagine
+        </p>
+      </div>
+    );
   }
 
-  const handleDownload = async () => {
-    const res = await fetch(image);
-    const blob = await res.blob();
-
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "filmface-hd.jpg";
-    a.click();
-  };
-
   return (
-    <div style={{ textAlign: "center", padding: 40 }}>
-      <h1>Pagamento completato</h1>
+    <div style={styles.page}>
+      <h1 style={styles.title}>Pagamento completato</h1>
 
-      <img
-        src={image}
-        style={{ width: 300, borderRadius: 12, marginTop: 20 }}
-      />
+      {loading && <p>Caricamento immagine HD...</p>}
 
-      <button
-        onClick={handleDownload}
-        style={{
-          marginTop: 20,
-          padding: 14,
-          borderRadius: 10,
-          background: "#6c5cff",
-          color: "white",
-          border: "none",
-        }}
-      >
-        Download HD
-      </button>
+      {imageUrl && (
+        <>
+          <img src={imageUrl} style={styles.image} />
+
+          <button
+            style={styles.button}
+            onClick={() => {
+              const a = document.createElement("a");
+              a.href = imageUrl;
+              a.download = "filmface-hd.jpg";
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+            }}
+          >
+            Scarica di nuovo
+          </button>
+        </>
+      )}
     </div>
   );
 }
+
+const styles = {
+  page: {
+    minHeight: "100vh",
+    background: "#0b0b0f",
+    display: "flex",
+    flexDirection: "column" as const,
+    alignItems: "center",
+    justifyContent: "center",
+    color: "white",
+    textAlign: "center" as const,
+    padding: 20,
+  },
+  title: {
+    marginBottom: 20,
+  },
+  image: {
+    width: 300,
+    borderRadius: 12,
+    marginTop: 20,
+  },
+  button: {
+    marginTop: 20,
+    padding: 14,
+    borderRadius: 10,
+    border: "none",
+    background: "#6c5cff",
+    color: "white",
+    cursor: "pointer",
+  },
+};

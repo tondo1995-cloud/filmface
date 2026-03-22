@@ -2,23 +2,40 @@ import Stripe from "stripe";
 
 export const runtime = "nodejs";
 
+// 🔥 FIX: niente apiVersion (evita errori Vercel)
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(req: Request) {
   try {
     const { imageUrl } = await req.json();
 
-    // 🔴 sicurezza minima
-    if (!imageUrl) {
+    // 🔴 VALIDAZIONE
+    if (!imageUrl || typeof imageUrl !== "string") {
       return Response.json(
-        { error: "Missing imageUrl" },
+        { error: "Invalid imageUrl" },
         { status: 400 }
       );
     }
 
+    // 🔥 BASE URL CORRETTA (fix precedenza logica)
+    let BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+
+    if (!BASE_URL) {
+      if (process.env.VERCEL_URL) {
+        BASE_URL = process.env.VERCEL_URL.startsWith("http")
+          ? process.env.VERCEL_URL
+          : `https://${process.env.VERCEL_URL}`;
+      }
+    }
+
+    if (!BASE_URL) {
+      throw new Error("Missing BASE_URL");
+    }
+
+    // 🔥 STRIPE SESSION
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
       mode: "payment",
+      payment_method_types: ["card"],
 
       line_items: [
         {
@@ -28,16 +45,21 @@ export async function POST(req: Request) {
               name: "FilmFace HD Download",
               description: "Download immagine HD senza watermark",
             },
-            unit_amount: 299, // €2.99
+            unit_amount: 299,
           },
           quantity: 1,
         },
       ],
 
-      // 🔥 PASSIAMO IMMAGINE ALLA SUCCESS PAGE
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/success?image=${encodeURIComponent(imageUrl)}`,
+      // 🔥 IMPORTANTE: salva immagine
+      metadata: {
+        imageUrl,
+      },
 
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}`,
+      // 🔥 SUCCESS → passa URL immagine
+      success_url: `${BASE_URL}/success?image=${encodeURIComponent(imageUrl)}`,
+
+      cancel_url: `${BASE_URL}`,
     });
 
     return Response.json({

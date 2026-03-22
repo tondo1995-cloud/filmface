@@ -3,7 +3,7 @@ import sharp from "sharp";
 
 export const runtime = "nodejs";
 
-// 🔥 ESTRAZIONE URL REPLICATE
+// 🔥 ESTRAZIONE URL REPLICATE (robusta)
 function extractReplicateUrl(output: any): string | null {
   if (!output) return null;
 
@@ -20,8 +20,20 @@ function extractReplicateUrl(output: any): string | null {
   }
 
   if (typeof output === "object") {
-    if (typeof output.url === "string") return output.url;
-    if (typeof output.href === "string") return output.href;
+    if (typeof output.url === "string" && output.url.startsWith("http")) {
+      return output.url;
+    }
+
+    if (typeof output.href === "string" && output.href.startsWith("http")) {
+      return output.href;
+    }
+
+    if (typeof output.toString === "function") {
+      const maybe = output.toString();
+      if (typeof maybe === "string" && maybe.startsWith("http")) {
+        return maybe;
+      }
+    }
   }
 
   return null;
@@ -54,12 +66,18 @@ async function applyWatermark(imageUrl: string): Promise<Buffer> {
     .toBuffer();
 
   return await image
-    .composite([{ input: resizedWatermark, blend: "over" }])
+    .composite([
+      {
+        input: resizedWatermark,
+        gravity: "center",
+        blend: "over",
+      },
+    ])
     .jpeg({ quality: 95 })
     .toBuffer();
 }
 
-// 🔥 MAIN ROUTE
+// 🔥 MAIN
 export async function POST(req: Request) {
   try {
     const { sourceImageUrl, targetImageUrl } = await req.json();
@@ -72,7 +90,7 @@ export async function POST(req: Request) {
       auth: process.env.REPLICATE_API_TOKEN!,
     });
 
-    // 🔥 STEP 1 — ROOP (FACE SWAP)
+    // 🔥 STEP 1 — ROOP
     const roopOutput = await replicate.run(
       "okaris/roop:8c1e100ecabb3151cf1e6c62879b6de7a4b84602de464ed249b6cff0b86211d8",
       {
@@ -91,7 +109,7 @@ export async function POST(req: Request) {
 
     console.log("ROOP OK:", roopImageUrl);
 
-    // 🔥 STEP 2 — FLUX (RIMOZIONE TESTO)
+    // 🔥 STEP 2 — FLUX
     const maskUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/masks/wolf-text-mask.png`;
 
     const prediction = await replicate.predictions.create({
@@ -101,12 +119,15 @@ export async function POST(req: Request) {
         mask: maskUrl,
         prompt: `
 Remove the actor name at the top of the poster.
-Do NOT add text.
+Do NOT add any text.
 Keep everything identical.
         `,
         steps: 50,
         guidance: 60,
         output_format: "jpg",
+        safety_tolerance: 2,
+        prompt_upsampling: false,
+        outpaint: "None",
       },
     });
 
@@ -130,18 +151,17 @@ Keep everything identical.
 
     console.log("FLUX OK:", finalImageUrl);
 
-    // 🔥 STEP 3 — WATERMARK
+    // 🔥 STEP 3 — WATERMARK (preview)
     const watermarkedBuffer = await applyWatermark(finalImageUrl);
 
-    // 🔥 CONVERSIONE (fix Next.js)
     const body = new Uint8Array(watermarkedBuffer);
 
-    // 🔥 RESPONSE FINALE
+    // 🔥 RESPONSE
     return new Response(body, {
       headers: {
         "Content-Type": "image/jpeg",
         "Cache-Control": "no-store",
-        "x-hd-url": finalImageUrl, // 🔥 CRITICO PER STRIPE
+        "x-hd-url": finalImageUrl, // 🔥 CRUCIALE
       },
     });
 

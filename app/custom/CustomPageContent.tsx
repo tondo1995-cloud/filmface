@@ -13,13 +13,22 @@ export default function CustomContent() {
   const [hdUrl, setHdUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // preview volto
   useEffect(() => {
-    if (faceFile) {
-      const url = URL.createObjectURL(faceFile);
-      setPreview(url);
-      return () => URL.revokeObjectURL(url);
-    }
+    if (!faceFile) return;
+
+    const url = URL.createObjectURL(faceFile);
+    setPreview(url);
+
+    return () => URL.revokeObjectURL(url);
   }, [faceFile]);
+
+  // cleanup preview generata
+  useEffect(() => {
+    return () => {
+      if (result) URL.revokeObjectURL(result);
+    };
+  }, [result]);
 
   const uploadToCloudinary = async (file: File) => {
     const formData = new FormData();
@@ -46,6 +55,7 @@ export default function CustomContent() {
     return data.secure_url;
   };
 
+  // 🔥 GENERATE
   const handleGenerate = async () => {
     if (!faceFile || !poster) {
       alert("Inserisci immagine");
@@ -54,6 +64,7 @@ export default function CustomContent() {
 
     setLoading(true);
     setResult(null);
+    setHdUrl(null);
 
     try {
       const faceUrl = await uploadToCloudinary(faceFile);
@@ -70,13 +81,23 @@ export default function CustomContent() {
         }),
       });
 
+      if (!res.ok) {
+        throw new Error("Errore generazione");
+      }
+
+      // preview (watermark)
       const blob = await res.blob();
       const previewUrl = URL.createObjectURL(blob);
       setResult(previewUrl);
 
-      // 🔥 URL HD dal backend
+      // 🔥 HD URL
       const hd = res.headers.get("x-hd-url");
-      if (hd) setHdUrl(hd);
+
+      if (!hd) {
+        console.error("HD URL missing");
+      }
+
+      setHdUrl(hd);
 
     } catch (err) {
       console.error(err);
@@ -86,13 +107,14 @@ export default function CustomContent() {
     setLoading(false);
   };
 
+  // 🔥 STRIPE
   const handleUnlock = async () => {
-    try {
-      if (!hdUrl) {
-        alert("Immagine HD non disponibile");
-        return;
-      }
+    if (!hdUrl) {
+      alert("Immagine HD non disponibile");
+      return;
+    }
 
+    try {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: {
@@ -108,8 +130,10 @@ export default function CustomContent() {
       if (data.url) {
         window.location.href = data.url;
       } else {
+        console.error(data);
         alert("Errore pagamento");
       }
+
     } catch (err) {
       console.error(err);
       alert("Errore pagamento");
@@ -135,7 +159,14 @@ export default function CustomContent() {
 
         {preview && <img src={preview} style={styles.preview} />}
 
-        <button style={styles.button} onClick={handleGenerate}>
+        <button
+          style={{
+            ...styles.button,
+            opacity: loading ? 0.6 : 1,
+          }}
+          onClick={handleGenerate}
+          disabled={loading}
+        >
           {loading ? "Generating..." : "Generate"}
         </button>
 
@@ -144,7 +175,14 @@ export default function CustomContent() {
             <img src={result} style={styles.image} />
 
             <div style={styles.overlay}>
-              <button style={styles.unlockButton} onClick={handleUnlock}>
+              <button
+                style={{
+                  ...styles.unlockButton,
+                  opacity: hdUrl ? 1 : 0.5,
+                }}
+                onClick={handleUnlock}
+                disabled={!hdUrl}
+              >
                 Unlock HD — €2.99
               </button>
             </div>
@@ -189,6 +227,7 @@ const styles = {
     background: "#6c5cff",
     color: "white",
     width: "100%",
+    cursor: "pointer",
   },
   result: {
     marginTop: 30,
@@ -205,6 +244,7 @@ const styles = {
     justifyContent: "center",
     alignItems: "center",
     background: "rgba(0,0,0,0.4)",
+    borderRadius: 12,
   },
   unlockButton: {
     padding: 14,
@@ -213,5 +253,6 @@ const styles = {
     background: "#00c853",
     color: "white",
     fontWeight: "bold",
+    cursor: "pointer",
   },
 };
