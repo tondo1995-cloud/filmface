@@ -12,9 +12,7 @@ export async function POST(req: Request) {
       auth: process.env.REPLICATE_API_TOKEN!,
     });
 
-    // =========================
-    // 1. FACE SWAP (ROOP)
-    // =========================
+    // 🔥 STEP 1 — FACE SWAP
     const roopOutput = await replicate.run(
       "okaris/roop:8c1e100ecabb3151cf1e6c62879b6de7a4b84602de464ed249b6cff0b86211d8",
       {
@@ -34,20 +32,18 @@ export async function POST(req: Request) {
     } else if (Array.isArray(roopOutput)) {
       const first = roopOutput[0];
       if (typeof first === "string") roopImageUrl = first;
-      else if (first?.url) roopImageUrl = first.url;
-    } else if (roopOutput && typeof roopOutput === "object") {
-      if ("url" in roopOutput) {
-        roopImageUrl = (roopOutput as any).url;
+      else if (first && typeof first === "object" && "url" in first) {
+        roopImageUrl = (first as any).url;
       }
+    } else if (roopOutput && typeof roopOutput === "object" && "url" in roopOutput) {
+      roopImageUrl = (roopOutput as any).url;
     }
 
     if (!roopImageUrl) {
-      throw new Error("ROOP non ha restituito immagine");
+      throw new Error("ROOP failed");
     }
 
-    // =========================
-    // 2. SE NON C’È NOME → RETURN
-    // =========================
+    // 👉 se NON c'è nome → ritorna subito
     if (!name || name.trim() === "") {
       return Response.json({
         success: true,
@@ -55,24 +51,34 @@ export async function POST(req: Request) {
       });
     }
 
-    // =========================
-    // 3. TEXT REPLACEMENT (FLUX)
-    // =========================
+    // 🔥 STEP 2 — FLUX TEXT REPLACEMENT
+
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL!;
+    const maskUrl = `${baseUrl}/masks/wolf-text-mask.png`;
+
+    console.log("🎯 FLUX INPUT:", {
+      image: roopImageUrl,
+      mask: maskUrl,
+      name: name,
+    });
+
     const fluxOutput = await replicate.run(
       "black-forest-labs/flux-fill-pro",
       {
         input: {
           image: roopImageUrl,
+          mask: maskUrl,
 
-          // ✅ MASK CORRETTA
-          mask: "https://filmface.vercel.app/masks/wolf-text-mask.png",
+          prompt: `Replace the top name with "${name}". 
+          Use identical font, color, spacing, and alignment.
+          Keep cinematic movie poster style. 
+          Do not change anything else.`,
 
-          prompt: `Replace the text in the masked area with "${name}". Keep identical font, size, color and style.`,
-
-          steps: 40,
+          steps: 50,
           guidance: 60,
           safety_tolerance: 2,
-          output_format: "jpg"
+          output_format: "jpg",
+          prompt_upsampling: false,
         },
       }
     );
@@ -84,17 +90,11 @@ export async function POST(req: Request) {
     if (typeof fluxOutput === "string") {
       finalImageUrl = fluxOutput;
     } else if (Array.isArray(fluxOutput)) {
-      const first = fluxOutput[0];
-      if (typeof first === "string") finalImageUrl = first;
-      else if (first?.url) finalImageUrl = first.url;
-    } else if (fluxOutput && typeof fluxOutput === "object") {
-      if ("url" in fluxOutput) {
-        finalImageUrl = (fluxOutput as any).url;
-      }
+      finalImageUrl = fluxOutput[0];
     }
 
     if (!finalImageUrl) {
-      throw new Error("FLUX non ha restituito immagine");
+      throw new Error("FLUX failed");
     }
 
     return Response.json({
@@ -103,8 +103,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
-    console.error("❌ ERROR:", error);
-
+    console.error("❌ ERROR FULL:", error);
     return Response.json({
       success: false,
       error: error.message,
