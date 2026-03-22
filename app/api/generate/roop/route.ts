@@ -1,6 +1,5 @@
 import Replicate from "replicate";
 import sharp from "sharp";
-import path from "path";
 
 export const runtime = "nodejs";
 
@@ -21,78 +20,43 @@ function extractReplicateUrl(output: any): string | null {
   }
 
   if (typeof output === "object") {
-    if (typeof output.url === "string") return output.url;
-    if (typeof output.href === "string") return output.href;
+    if (typeof output.url === "string" && output.url.startsWith("http")) {
+      return output.url;
+    }
+
+    if (typeof output.href === "string" && output.href.startsWith("http")) {
+      return output.href;
+    }
+
+    if (typeof output.toString === "function") {
+      const maybe = output.toString();
+      if (typeof maybe === "string" && maybe.startsWith("http")) {
+        return maybe;
+      }
+    }
   }
 
   return null;
 }
 
-// 🔥 AGGIUNTA TESTO (BUFFER VERSION - CORRETTA)
-async function applyText(imageBuffer: Buffer, name: string): Promise<Buffer> {
-  const image = sharp(imageBuffer);
-  const metadata = await image.metadata();
-
-  const width = metadata.width!;
-  const height = metadata.height!;
-
-  const fontSize = Math.floor(width * 0.055);
-  const boxWidth = Math.floor(width * 0.7);
-  const boxHeight = Math.floor(fontSize * 1.5);
-
-  const left = Math.floor(width * 0.15);
-  const top = Math.floor(height * 0.08);
-
-  const safeName = (name && name.trim() ? name : "NOME COGNOME")
-    .toUpperCase()
-    .replace(/&/g, "&amp;");
-
-  // 🔥 SVG con viewBox (CRITICO)
-  const svg = Buffer.from(`
-    <svg width="${boxWidth}" height="${boxHeight}" viewBox="0 0 ${boxWidth} ${boxHeight}" xmlns="http://www.w3.org/2000/svg">
-      <rect width="100%" height="100%" fill="#f5a623"/>
-      
-      <text 
-        x="50%" 
-        y="50%" 
-        dominant-baseline="middle" 
-        text-anchor="middle"
-        font-family="Arial, Helvetica, sans-serif"
-        font-size="${fontSize}"
-        font-weight="700"
-        fill="#111111"
-        letter-spacing="2"
-      >
-        ${safeName}
-      </text>
-    </svg>
-  `);
-
-  return await image
-    .composite([
-      {
-        input: svg,
-        top: top,
-        left: left,
-        blend: "over", // 🔥 IMPORTANTISSIMO
-      },
-    ])
-    .jpeg({ quality: 95 })
-    .toBuffer();
-}
-
-// 🔥 WATERMARK
-async function applyWatermark(buffer: Buffer): Promise<Buffer> {
+// 🔥 WATERMARK SU BUFFER
+async function applyWatermarkBuffer(imageBuffer: Buffer): Promise<Buffer> {
   const watermarkRes = await fetch(
     `${process.env.NEXT_PUBLIC_BASE_URL}/watermarks/watermark1.png`
   );
 
-  if (!watermarkRes.ok) throw new Error("Errore watermark");
+  if (!watermarkRes.ok) {
+    throw new Error("Errore watermark");
+  }
 
   const watermarkBuffer = Buffer.from(await watermarkRes.arrayBuffer());
 
-  const image = sharp(buffer);
+  const image = sharp(imageBuffer);
   const metadata = await image.metadata();
+
+  if (!metadata.width || !metadata.height) {
+    throw new Error("Dimensioni immagine non valide");
+  }
 
   const resizedWatermark = await sharp(watermarkBuffer)
     .resize(metadata.width, metadata.height)
@@ -100,7 +64,13 @@ async function applyWatermark(buffer: Buffer): Promise<Buffer> {
     .toBuffer();
 
   return await image
-    .composite([{ input: resizedWatermark }])
+    .composite([
+      {
+        input: resizedWatermark,
+        gravity: "center",
+        blend: "over",
+      },
+    ])
     .jpeg({ quality: 95 })
     .toBuffer();
 }
@@ -110,15 +80,15 @@ export async function POST(req: Request) {
   try {
     const { sourceImageUrl, targetImageUrl, name } = await req.json();
 
-    if (!sourceImageUrl || !targetImageUrl || !name) {
-      throw new Error("Missing data");
+    if (!sourceImageUrl || !targetImageUrl) {
+      throw new Error("Missing images");
     }
 
     const replicate = new Replicate({
       auth: process.env.REPLICATE_API_TOKEN!,
     });
 
-    // 🔥 FACE SWAP
+    // 🔥 STEP 1 — FACE SWAP
     const roopOutput = await replicate.run(
       "okaris/roop:8c1e100ecabb3151cf1e6c62879b6de7a4b84602de464ed249b6cff0b86211d8",
       {
@@ -137,31 +107,91 @@ export async function POST(req: Request) {
 
     console.log("ROOP OK:", roopImageUrl);
 
-    // 🔥 scarica immagine
-    const imgRes = await fetch(roopImageUrl);
-    if (!imgRes.ok) throw new Error("Errore download roop");
+    // 🔥 STEP 2 — FLUX
+    const maskUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/masks/wolf-text-mask.png`;
 
-    const baseBuffer = Buffer.from(await imgRes.arrayBuffer());
+    const finalPrompt =
+      name && String(name).trim()
+        ? `
+Replace the actor name at the top of the poster with:
+"${String(name).trim()}"
 
-    // 🔥 aggiungi testo
-    const withTextBuffer = await applyText(baseBuffer, name);
+STRICT RULES:
+- Replace only the top actor name area
+- Keep the exact same layout and position
+- Keep the same font style, weight and spacing as closely as possible
+- Keep the same color and cinematic poster look
+- Do not modify anything else in the image
+`
+        : `
+Remove the actor name at the top of the poster.
 
-    // 🔥 watermark preview
-    const previewBuffer = await applyWatermark(withTextBuffer);
+STRICT RULES:
+- Completely erase the text
+- Rebuild background naturally
+- Keep lighting and grain identical
+- Do NOT add any text
+- Do NOT modify anything else
+`;
 
-    const body = new Uint8Array(previewBuffer);
+    const prediction = await replicate.predictions.create({
+      model: "black-forest-labs/flux-fill-pro",
+      input: {
+        image: roopImageUrl,
+        mask: maskUrl,
+        prompt: finalPrompt,
+        steps: 50,
+        guidance: 60,
+        safety_tolerance: 2,
+        prompt_upsampling: false,
+        output_format: "jpg",
+        outpaint: "None",
+      },
+    });
 
-    // 🔥 HD = CON TESTO (no watermark)
-    const hdBase64 = Buffer.from(withTextBuffer).toString("base64");
+    let result = prediction;
 
-    return new Response(body, {
+    while (result.status !== "succeeded") {
+      if (result.status === "failed" || result.status === "canceled") {
+        console.error("FLUX FAILED:", result);
+        throw new Error("Flux failed");
+      }
+
+      await new Promise((r) => setTimeout(r, 1000));
+      result = await replicate.predictions.get(result.id);
+    }
+
+    const finalImageUrl = extractReplicateUrl(result.output);
+
+    if (!finalImageUrl) {
+      throw new Error("Flux output vuoto");
+    }
+
+    console.log("FLUX OK:", finalImageUrl);
+
+    // 🔥 STEP 3 — scarica HD con testo
+    const finalImageRes = await fetch(finalImageUrl);
+    if (!finalImageRes.ok) {
+      throw new Error("Errore download immagine finale");
+    }
+
+    const finalImageBuffer = Buffer.from(await finalImageRes.arrayBuffer());
+
+    // 🔥 STEP 4 — watermark preview
+    const previewBuffer = await applyWatermarkBuffer(finalImageBuffer);
+
+    const previewBody = new Uint8Array(previewBuffer);
+
+    // 🔥 HD = CON testo, SENZA watermark
+    const hdBase64 = finalImageBuffer.toString("base64");
+
+    return new Response(previewBody, {
       headers: {
         "Content-Type": "image/jpeg",
         "Cache-Control": "no-store",
         "x-hd-image": hdBase64,
       },
     });
-
   } catch (error: any) {
     console.error("🔥 ERROR:", error);
 
