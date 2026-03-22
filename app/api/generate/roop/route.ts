@@ -1,9 +1,10 @@
 import Replicate from "replicate";
 import sharp from "sharp";
+import path from "path";
 
 export const runtime = "nodejs";
 
-// 🔥 ESTRAZIONE URL REPLICATE
+// 🔥 ESTRAZIONE URL
 function extractReplicateUrl(output: any): string | null {
   if (!output) return null;
 
@@ -39,16 +40,77 @@ function extractReplicateUrl(output: any): string | null {
   return null;
 }
 
-// 🔥 WATERMARK
-async function applyWatermark(imageUrl: string): Promise<Buffer> {
-  const imageRes = await fetch(imageUrl);
-  if (!imageRes.ok) throw new Error("Errore download immagine");
+// 🔥 AGGIUNTA TESTO (CORE)
+async function applyText(imageUrl: string, name: string): Promise<Buffer> {
+  const res = await fetch(imageUrl);
+  if (!res.ok) throw new Error("Errore download immagine");
 
-  const imageBuffer = Buffer.from(await imageRes.arrayBuffer());
+  const buffer = Buffer.from(await res.arrayBuffer());
 
+  const image = sharp(buffer);
+  const metadata = await image.metadata();
+
+  const width = metadata.width!;
+  const height = metadata.height!;
+
+  const fontPath = path.join(
+    process.cwd(),
+    "public/fonts/Special_Gothic_Condensed/SpecialGothicCondensedOne-Regular.ttf"
+  );
+
+  const top = Math.floor(height * 0.08);
+  const fontSize = Math.floor(width * 0.055);
+
+  const safeName = name.toUpperCase().replace(/&/g, "&amp;");
+
+  const svg = `
+  <svg width="${width}" height="${height}">
+    <style>
+      @font-face {
+        font-family: 'Gothic';
+        src: url('file://${fontPath}');
+      }
+
+      .title {
+        fill: #000000;
+        font-size: ${fontSize}px;
+        font-family: 'Gothic';
+        letter-spacing: 3px;
+      }
+    </style>
+
+    <rect 
+      x="${width * 0.15}" 
+      y="${top - fontSize * 0.8}" 
+      width="${width * 0.7}" 
+      height="${fontSize * 1.4}" 
+      fill="#f5a623"
+    />
+
+    <text 
+      x="50%" 
+      y="${top}" 
+      text-anchor="middle" 
+      dominant-baseline="middle"
+      class="title"
+    >
+      ${safeName}
+    </text>
+  </svg>
+  `;
+
+  return await image
+    .composite([{ input: Buffer.from(svg) }])
+    .jpeg({ quality: 95 })
+    .toBuffer();
+}
+
+// 🔥 WATERMARK (BUFFER VERSION)
+async function applyWatermarkBuffer(imageBuffer: Buffer): Promise<Buffer> {
   const watermarkRes = await fetch(
     `${process.env.NEXT_PUBLIC_BASE_URL}/watermarks/watermark1.png`
   );
+
   if (!watermarkRes.ok) throw new Error("Errore watermark");
 
   const watermarkBuffer = Buffer.from(await watermarkRes.arrayBuffer());
@@ -56,23 +118,13 @@ async function applyWatermark(imageUrl: string): Promise<Buffer> {
   const image = sharp(imageBuffer);
   const metadata = await image.metadata();
 
-  if (!metadata.width || !metadata.height) {
-    throw new Error("Dimensioni immagine non valide");
-  }
-
   const resizedWatermark = await sharp(watermarkBuffer)
     .resize(metadata.width, metadata.height)
     .png()
     .toBuffer();
 
   return await image
-    .composite([
-      {
-        input: resizedWatermark,
-        gravity: "center",
-        blend: "over",
-      },
-    ])
+    .composite([{ input: resizedWatermark }])
     .jpeg({ quality: 95 })
     .toBuffer();
 }
@@ -109,74 +161,19 @@ export async function POST(req: Request) {
 
     console.log("ROOP OK:", roopImageUrl);
 
-    // 🔥 STEP 2 — FLUX (REMOVE + ADD NAME)
-    const maskUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/masks/wolf-text-mask.png`;
-
-    const finalPrompt = name
-      ? `
-Remove the actor name at the top of the poster.
-
-Then insert this new name in the exact same position:
-"${name}"
-
-STRICT RULES:
-- Use the exact same font style (cinematic serif)
-- Same size, spacing and alignment
-- Same color and lighting
-- Must look like original movie poster text
-- Do NOT change anything else
-`
-      : `
-Remove the actor name at the top of the poster.
-Do NOT add any text.
-Keep everything identical.
-`;
-
-    const prediction = await replicate.predictions.create({
-      model: "black-forest-labs/flux-fill-pro",
-      input: {
-        image: roopImageUrl,
-        mask: maskUrl,
-        prompt: finalPrompt,
-        steps: 50,
-        guidance: 60,
-        output_format: "jpg",
-        safety_tolerance: 2,
-        prompt_upsampling: false,
-        outpaint: "None",
-      },
-    });
-
-    let result = prediction;
-
-    while (result.status !== "succeeded") {
-      if (result.status === "failed" || result.status === "canceled") {
-        console.error("FLUX FAILED:", result);
-        throw new Error("Flux failed");
-      }
-
-      await new Promise((r) => setTimeout(r, 1000));
-      result = await replicate.predictions.get(result.id);
-    }
-
-    const finalImageUrl = extractReplicateUrl(result.output);
-
-    if (!finalImageUrl) {
-      throw new Error("Flux output vuoto");
-    }
-
-    console.log("FLUX OK:", finalImageUrl);
+    // 🔥 STEP 2 — TESTO (NO AI)
+    const withTextBuffer = await applyText(roopImageUrl, name);
 
     // 🔥 STEP 3 — WATERMARK
-    const watermarkedBuffer = await applyWatermark(finalImageUrl);
+    const finalBuffer = await applyWatermarkBuffer(withTextBuffer);
 
-    const body = new Uint8Array(watermarkedBuffer);
+    const body = new Uint8Array(finalBuffer);
 
     return new Response(body, {
       headers: {
         "Content-Type": "image/jpeg",
         "Cache-Control": "no-store",
-        "x-hd-url": finalImageUrl,
+        "x-hd-url": roopImageUrl, // HD = senza watermark
       },
     });
 

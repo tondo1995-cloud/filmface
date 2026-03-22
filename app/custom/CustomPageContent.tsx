@@ -8,13 +8,13 @@ export default function CustomContent() {
   const poster = searchParams.get("poster");
 
   const [faceFile, setFaceFile] = useState<File | null>(null);
-  const [name, setName] = useState(""); // 🔥 RIPRISTINATO
+  const [name, setName] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [hdUrl, setHdUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // preview volto
+  // 🔥 preview volto
   useEffect(() => {
     if (!faceFile) return;
 
@@ -24,7 +24,7 @@ export default function CustomContent() {
     return () => URL.revokeObjectURL(url);
   }, [faceFile]);
 
-  // cleanup preview generata
+  // 🔥 cleanup preview finale
   useEffect(() => {
     return () => {
       if (result) URL.revokeObjectURL(result);
@@ -58,8 +58,13 @@ export default function CustomContent() {
 
   // 🔥 GENERATE
   const handleGenerate = async () => {
-    if (!faceFile || !poster || !name) {
-      alert("Inserisci immagine e nome");
+    if (!faceFile) {
+      alert("Inserisci un'immagine");
+      return;
+    }
+
+    if (!name.trim()) {
+      alert("Inserisci nome e cognome");
       return;
     }
 
@@ -69,7 +74,9 @@ export default function CustomContent() {
 
     try {
       const faceUrl = await uploadToCloudinary(faceFile);
-      const fullPosterUrl = `${process.env.NEXT_PUBLIC_BASE_URL}${poster}`;
+
+      // 🔥 SEMPRE immagine base vuota
+      const fullPosterUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/posters/wolf-empty.jpg`;
 
       const res = await fetch("/api/generate/roop", {
         method: "POST",
@@ -79,7 +86,7 @@ export default function CustomContent() {
         body: JSON.stringify({
           sourceImageUrl: faceUrl,
           targetImageUrl: fullPosterUrl,
-          name: name, // 🔥 PASSATO AL BACKEND
+          name: name.trim(),
         }),
       });
 
@@ -147,12 +154,11 @@ export default function CustomContent() {
       <div style={styles.container}>
         <h1 style={styles.title}>Create your poster</h1>
 
-        {poster && (
-          <img
-            src={`${process.env.NEXT_PUBLIC_BASE_URL}${poster}`}
-            style={styles.poster}
-          />
-        )}
+        {/* preview poster */}
+        <img
+          src={`${process.env.NEXT_PUBLIC_BASE_URL}/posters/wolf-empty.jpg`}
+          style={styles.poster}
+        />
 
         {/* FILE */}
         <input
@@ -160,7 +166,7 @@ export default function CustomContent() {
           onChange={(e) => setFaceFile(e.target.files?.[0] || null)}
         />
 
-        {/* 🔥 INPUT NOME */}
+        {/* INPUT NOME */}
         <input
           type="text"
           placeholder="Nome e cognome"
@@ -169,8 +175,10 @@ export default function CustomContent() {
           style={styles.input}
         />
 
+        {/* preview volto */}
         {preview && <img src={preview} style={styles.preview} />}
 
+        {/* generate */}
         <button
           style={{
             ...styles.button,
@@ -182,6 +190,7 @@ export default function CustomContent() {
           {loading ? "Generating..." : "Generate"}
         </button>
 
+        {/* risultato */}
         {result && (
           <div style={styles.result}>
             <img src={result} style={styles.image} />
