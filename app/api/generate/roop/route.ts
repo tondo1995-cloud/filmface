@@ -28,59 +28,41 @@ function extractReplicateUrl(output: any): string | null {
   return null;
 }
 
-// 🔥 TESTO PRECISO (con box reale)
-async function applyText(buffer: Buffer, name: string): Promise<Buffer> {
-  const image = sharp(buffer);
+// 🔥 AGGIUNTA TESTO (BUFFER VERSION - CORRETTA)
+async function applyText(imageBuffer: Buffer, name: string): Promise<Buffer> {
+  const image = sharp(imageBuffer);
   const metadata = await image.metadata();
 
   const width = metadata.width!;
   const height = metadata.height!;
 
-  const fontPath = path.join(
-    process.cwd(),
-    "public/fonts/Special_Gothic_Condensed/SpecialGothicCondensedOne-Regular.ttf"
-  );
+  const top = Math.floor(height * 0.11);
+  const fontSize = Math.floor(width * 0.06);
 
-  // 🔥 BOX REALE (coerente con poster)
-  const boxWidth = width * 0.7;
-  const boxHeight = height * 0.08;
-  const boxX = width * 0.15;
-  const boxY = height * 0.08;
-
-  const fontSize = boxHeight * 0.65;
-
-  const safeName = name.toUpperCase().replace(/&/g, "&amp;");
+  const safeName = (name && name.trim() ? name : "NOME COGNOME")
+    .toUpperCase()
+    .replace(/&/g, "&amp;");
 
   const svg = `
   <svg width="${width}" height="${height}">
-    <style>
-      @font-face {
-        font-family: 'PosterFont';
-        src: url('file://${fontPath}');
-      }
-
-      .text {
-        fill: #000000;
-        font-size: ${fontSize}px;
-        font-family: 'PosterFont';
-        letter-spacing: 3px;
-      }
-    </style>
-
     <rect 
-      x="${boxX}" 
-      y="${boxY}" 
-      width="${boxWidth}" 
-      height="${boxHeight}" 
+      x="${width * 0.15}" 
+      y="${top - fontSize * 0.9}" 
+      width="${width * 0.7}" 
+      height="${fontSize * 1.5}" 
       fill="#f5a623"
     />
 
     <text 
       x="50%" 
-      y="${boxY + boxHeight / 2}" 
+      y="${top}" 
       text-anchor="middle" 
       dominant-baseline="middle"
-      class="text"
+      fill="#111111"
+      font-size="${fontSize}"
+      font-family="Arial, Helvetica, sans-serif"
+      letter-spacing="2"
+      font-weight="700"
     >
       ${safeName}
     </text>
