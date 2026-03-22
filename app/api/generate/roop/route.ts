@@ -19,30 +19,45 @@ export async function POST(req: Request) {
       }
     );
 
+    console.log("ROOP RAW:", roopOutput);
+
     let roopImageUrl: string | null = null;
 
-    if (typeof roopOutput === "string") {
-      roopImageUrl = roopOutput;
-    } else if (Array.isArray(roopOutput)) {
-      roopImageUrl = roopOutput[0];
+    // 🔥 FIX TYPE + PARSING COMPLETO
+    const output: any = roopOutput;
+
+    if (typeof output === "string") {
+      roopImageUrl = output;
+    } else if (Array.isArray(output)) {
+      const first = output[0];
+
+      if (typeof first === "string") {
+        roopImageUrl = first;
+      } else if (first && typeof first === "object" && "url" in first) {
+        roopImageUrl = first.url;
+      }
+    } else if (output && typeof output === "object" && "url" in output) {
+      roopImageUrl = output.url;
     }
 
-    if (!roopImageUrl) {
-      throw new Error("Errore ROOP");
+    if (!roopImageUrl || typeof roopImageUrl !== "string") {
+      throw new Error("ROOP output non valido");
     }
 
-    // 🔥 STEP 2 — TEXT REPLACEMENT (FLUX)
+    console.log("ROOP URL:", roopImageUrl);
+
+    // 🔥 STEP 2 — FLUX TEXT REPLACE
     const maskUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/masks/wolf-text-mask.png`;
 
     const prediction = await replicate.predictions.create({
       model: "black-forest-labs/flux-fill-pro",
       input: {
-        image: roopImageUrl,
+        image: String(roopImageUrl), // ⚠️ IMPORTANTISSIMO: stringa pura
         mask: maskUrl,
 
         prompt: `Replace the text "LEONARDO DICAPRIO" with "${name}".
-Use identical font, color, spacing and cinematic movie poster style.
-Do not change anything else.`,
+Use EXACT same font, size, color and alignment.
+Do NOT modify anything else in the image.`,
 
         steps: 50,
         guidance: 60,
@@ -52,11 +67,12 @@ Do not change anything else.`,
       },
     });
 
-    // 🔁 WAIT RESULT
     let result = prediction;
 
+    // 🔁 WAIT LOOP
     while (result.status !== "succeeded") {
       if (result.status === "failed") {
+        console.error("FLUX FAILED:", result);
         throw new Error("Flux failed");
       }
 
@@ -67,7 +83,7 @@ Do not change anything else.`,
     const finalImageUrl = result.output?.[0];
 
     if (!finalImageUrl) {
-      throw new Error("No output from Flux");
+      throw new Error("Flux output vuoto");
     }
 
     return Response.json({
