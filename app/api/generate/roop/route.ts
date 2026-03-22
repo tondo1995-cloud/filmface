@@ -3,12 +3,10 @@ import Replicate from "replicate";
 function extractReplicateUrl(output: any): string | null {
   if (!output) return null;
 
-  // stringa diretta
   if (typeof output === "string" && output.startsWith("http")) {
     return output;
   }
 
-  // array di output
   if (Array.isArray(output)) {
     for (const item of output) {
       const found = extractReplicateUrl(item);
@@ -17,7 +15,6 @@ function extractReplicateUrl(output: any): string | null {
     return null;
   }
 
-  // oggetto con proprietà url
   if (typeof output === "object") {
     if (typeof output.url === "function") {
       const maybe = output.url();
@@ -34,7 +31,6 @@ function extractReplicateUrl(output: any): string | null {
       return output.href;
     }
 
-    // fallback toString() per FileOutput
     if (typeof output.toString === "function") {
       const maybe = output.toString();
       if (typeof maybe === "string" && maybe.startsWith("http")) {
@@ -58,7 +54,7 @@ export async function POST(req: Request) {
       auth: process.env.REPLICATE_API_TOKEN!,
     });
 
-    // STEP 1 — FACE SWAP
+    // 🔥 STEP 1 — FACE SWAP
     const roopOutput = await replicate.run(
       "okaris/roop:8c1e100ecabb3151cf1e6c62879b6de7a4b84602de464ed249b6cff0b86211d8",
       {
@@ -79,7 +75,7 @@ export async function POST(req: Request) {
 
     console.log("ROOP URL:", roopImageUrl);
 
-    // se non c’è nome, ritorna solo il risultato di roop
+    // 👉 se non c’è nome → ritorna subito
     if (!name || !String(name).trim()) {
       return Response.json({
         success: true,
@@ -87,27 +83,61 @@ export async function POST(req: Request) {
       });
     }
 
-    // STEP 2 — FLUX FILL PRO
+    // 🔥 STEP 2 — FLUX
     const maskUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/masks/wolf-text-mask.png`;
+
+    const safeName = String(name).trim().toUpperCase();
+
+    const prompt = `
+Replace ONLY the actor name at the top of the poster with the text: "${safeName}".
+
+STRICT RULES:
+- Modify ONLY the top name text.
+- Keep EXACT same position and alignment.
+- Keep EXACT same bounding box width as original text.
+- DO NOT move, scale or shift the text block.
+
+TYPOGRAPHY:
+- Use identical font style (bold cinematic sans-serif).
+- Match font weight, thickness and proportions exactly.
+- Match original color precisely (warm yellow/orange).
+
+WIDTH CONTROL:
+- The new text MUST occupy the SAME WIDTH as the original.
+- If text is longer → reduce letter spacing (tracking).
+- If text is shorter → increase letter spacing.
+- Keep font size visually identical.
+
+VISUAL INTEGRATION:
+- Preserve lighting, glow, shadows and blending.
+- Text must look printed, not generated.
+
+REFERENCE:
+The result must visually match the width and style of "LEONARDO DICAPRIO".
+
+IMPORTANT:
+- Do NOT modify anything else.
+- Do NOT touch background, subject or layout.
+`;
 
     console.log("FLUX INPUT:", {
       image: roopImageUrl,
       mask: maskUrl,
-      name,
+      name: safeName,
     });
 
     const prediction = await replicate.predictions.create({
       model: "black-forest-labs/flux-fill-pro",
       input: {
-        outpaint: "None",
-        output_format: "jpg",
-        mask: maskUrl,
         image: roopImageUrl,
+        mask: maskUrl,
+        prompt: prompt,
         steps: 50,
-        prompt: `Replace the top actor name with "${name}". Keep identical font, size, color, spacing, alignment, lighting and cinematic poster style. Do not modify anything else.`,
         guidance: 60,
         safety_tolerance: 2,
         prompt_upsampling: false,
+        output_format: "jpg",
+        outpaint: "None",
       },
     });
 
@@ -136,7 +166,7 @@ export async function POST(req: Request) {
       image: finalImageUrl,
     });
   } catch (error: any) {
-    console.error("FULL ERROR:", error);
+    console.error("🔥 FULL ERROR:", error);
 
     return Response.json({
       success: false,
