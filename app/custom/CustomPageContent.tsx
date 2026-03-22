@@ -28,8 +28,9 @@ export default function CustomContent() {
   useEffect(() => {
     return () => {
       if (result) URL.revokeObjectURL(result);
+      if (hdUrl) URL.revokeObjectURL(hdUrl);
     };
-  }, [result]);
+  }, [result, hdUrl]);
 
   const uploadToCloudinary = async (file: File) => {
     const formData = new FormData();
@@ -75,7 +76,7 @@ export default function CustomContent() {
     try {
       const faceUrl = await uploadToCloudinary(faceFile);
 
-      // 🔥 SEMPRE immagine base vuota
+      // 🔥 poster base SENZA testo
       const fullPosterUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/posters/wolf-empty.jpg`;
 
       const res = await fetch("/api/generate/roop", {
@@ -94,19 +95,28 @@ export default function CustomContent() {
         throw new Error("Errore generazione");
       }
 
-      // preview (watermark)
+      // 🔥 PREVIEW (watermark)
       const blob = await res.blob();
       const previewUrl = URL.createObjectURL(blob);
       setResult(previewUrl);
 
-      // HD URL
-      const hd = res.headers.get("x-hd-url");
+      // 🔥 HD IMAGE (BASE64 → BLOB)
+      const base64 = res.headers.get("x-hd-image");
 
-      if (!hd) {
-        console.error("HD URL missing");
+      if (base64) {
+        const binary = atob(base64);
+        const bytes = Uint8Array.from(binary, (c) =>
+          c.charCodeAt(0)
+        );
+        const hdBlob = new Blob([bytes], {
+          type: "image/jpeg",
+        });
+
+        const hdObjectUrl = URL.createObjectURL(hdBlob);
+        setHdUrl(hdObjectUrl);
+      } else {
+        console.error("HD image missing");
       }
-
-      setHdUrl(hd);
 
     } catch (err) {
       console.error(err);
@@ -154,7 +164,7 @@ export default function CustomContent() {
       <div style={styles.container}>
         <h1 style={styles.title}>Create your poster</h1>
 
-        {/* preview poster */}
+        {/* poster base */}
         <img
           src={`${process.env.NEXT_PUBLIC_BASE_URL}/posters/wolf-empty.jpg`}
           style={styles.poster}
@@ -163,7 +173,10 @@ export default function CustomContent() {
         {/* FILE */}
         <input
           type="file"
-          onChange={(e) => setFaceFile(e.target.files?.[0] || null)}
+          accept="image/*"
+          onChange={(e) =>
+            setFaceFile(e.target.files?.[0] || null)
+          }
         />
 
         {/* INPUT NOME */}
@@ -176,9 +189,11 @@ export default function CustomContent() {
         />
 
         {/* preview volto */}
-        {preview && <img src={preview} style={styles.preview} />}
+        {preview && (
+          <img src={preview} style={styles.preview} />
+        )}
 
-        {/* generate */}
+        {/* GENERATE */}
         <button
           style={{
             ...styles.button,
@@ -190,7 +205,7 @@ export default function CustomContent() {
           {loading ? "Generating..." : "Generate"}
         </button>
 
-        {/* risultato */}
+        {/* RESULT */}
         {result && (
           <div style={styles.result}>
             <img src={result} style={styles.image} />

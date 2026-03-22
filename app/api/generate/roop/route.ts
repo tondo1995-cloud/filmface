@@ -21,32 +21,15 @@ function extractReplicateUrl(output: any): string | null {
   }
 
   if (typeof output === "object") {
-    if (typeof output.url === "string" && output.url.startsWith("http")) {
-      return output.url;
-    }
-
-    if (typeof output.href === "string" && output.href.startsWith("http")) {
-      return output.href;
-    }
-
-    if (typeof output.toString === "function") {
-      const maybe = output.toString();
-      if (typeof maybe === "string" && maybe.startsWith("http")) {
-        return maybe;
-      }
-    }
+    if (typeof output.url === "string") return output.url;
+    if (typeof output.href === "string") return output.href;
   }
 
   return null;
 }
 
-// 🔥 AGGIUNTA TESTO (CORE)
-async function applyText(imageUrl: string, name: string): Promise<Buffer> {
-  const res = await fetch(imageUrl);
-  if (!res.ok) throw new Error("Errore download immagine");
-
-  const buffer = Buffer.from(await res.arrayBuffer());
-
+// 🔥 TESTO PRECISO (con box reale)
+async function applyText(buffer: Buffer, name: string): Promise<Buffer> {
   const image = sharp(buffer);
   const metadata = await image.metadata();
 
@@ -58,8 +41,13 @@ async function applyText(imageUrl: string, name: string): Promise<Buffer> {
     "public/fonts/Special_Gothic_Condensed/SpecialGothicCondensedOne-Regular.ttf"
   );
 
-  const top = Math.floor(height * 0.08);
-  const fontSize = Math.floor(width * 0.055);
+  // 🔥 BOX REALE (coerente con poster)
+  const boxWidth = width * 0.7;
+  const boxHeight = height * 0.08;
+  const boxX = width * 0.15;
+  const boxY = height * 0.08;
+
+  const fontSize = boxHeight * 0.65;
 
   const safeName = name.toUpperCase().replace(/&/g, "&amp;");
 
@@ -67,32 +55,32 @@ async function applyText(imageUrl: string, name: string): Promise<Buffer> {
   <svg width="${width}" height="${height}">
     <style>
       @font-face {
-        font-family: 'Gothic';
+        font-family: 'PosterFont';
         src: url('file://${fontPath}');
       }
 
-      .title {
+      .text {
         fill: #000000;
         font-size: ${fontSize}px;
-        font-family: 'Gothic';
+        font-family: 'PosterFont';
         letter-spacing: 3px;
       }
     </style>
 
     <rect 
-      x="${width * 0.15}" 
-      y="${top - fontSize * 0.8}" 
-      width="${width * 0.7}" 
-      height="${fontSize * 1.4}" 
+      x="${boxX}" 
+      y="${boxY}" 
+      width="${boxWidth}" 
+      height="${boxHeight}" 
       fill="#f5a623"
     />
 
     <text 
       x="50%" 
-      y="${top}" 
+      y="${boxY + boxHeight / 2}" 
       text-anchor="middle" 
       dominant-baseline="middle"
-      class="title"
+      class="text"
     >
       ${safeName}
     </text>
@@ -105,8 +93,8 @@ async function applyText(imageUrl: string, name: string): Promise<Buffer> {
     .toBuffer();
 }
 
-// 🔥 WATERMARK (BUFFER VERSION)
-async function applyWatermarkBuffer(imageBuffer: Buffer): Promise<Buffer> {
+// 🔥 WATERMARK
+async function applyWatermark(buffer: Buffer): Promise<Buffer> {
   const watermarkRes = await fetch(
     `${process.env.NEXT_PUBLIC_BASE_URL}/watermarks/watermark1.png`
   );
@@ -115,7 +103,7 @@ async function applyWatermarkBuffer(imageBuffer: Buffer): Promise<Buffer> {
 
   const watermarkBuffer = Buffer.from(await watermarkRes.arrayBuffer());
 
-  const image = sharp(imageBuffer);
+  const image = sharp(buffer);
   const metadata = await image.metadata();
 
   const resizedWatermark = await sharp(watermarkBuffer)
@@ -134,15 +122,15 @@ export async function POST(req: Request) {
   try {
     const { sourceImageUrl, targetImageUrl, name } = await req.json();
 
-    if (!sourceImageUrl || !targetImageUrl) {
-      throw new Error("Missing images");
+    if (!sourceImageUrl || !targetImageUrl || !name) {
+      throw new Error("Missing data");
     }
 
     const replicate = new Replicate({
       auth: process.env.REPLICATE_API_TOKEN!,
     });
 
-    // 🔥 STEP 1 — FACE SWAP
+    // 🔥 FACE SWAP
     const roopOutput = await replicate.run(
       "okaris/roop:8c1e100ecabb3151cf1e6c62879b6de7a4b84602de464ed249b6cff0b86211d8",
       {
@@ -161,19 +149,28 @@ export async function POST(req: Request) {
 
     console.log("ROOP OK:", roopImageUrl);
 
-    // 🔥 STEP 2 — TESTO (NO AI)
-    const withTextBuffer = await applyText(roopImageUrl, name);
+    // 🔥 scarica immagine
+    const imgRes = await fetch(roopImageUrl);
+    if (!imgRes.ok) throw new Error("Errore download roop");
 
-    // 🔥 STEP 3 — WATERMARK
-    const finalBuffer = await applyWatermarkBuffer(withTextBuffer);
+    const baseBuffer = Buffer.from(await imgRes.arrayBuffer());
 
-    const body = new Uint8Array(finalBuffer);
+    // 🔥 aggiungi testo
+    const withTextBuffer = await applyText(baseBuffer, name);
+
+    // 🔥 watermark preview
+    const previewBuffer = await applyWatermark(withTextBuffer);
+
+    const body = new Uint8Array(previewBuffer);
+
+    // 🔥 HD = CON TESTO (no watermark)
+    const hdBase64 = Buffer.from(withTextBuffer).toString("base64");
 
     return new Response(body, {
       headers: {
         "Content-Type": "image/jpeg",
         "Cache-Control": "no-store",
-        "x-hd-url": roopImageUrl, // HD = senza watermark
+        "x-hd-image": hdBase64,
       },
     });
 
