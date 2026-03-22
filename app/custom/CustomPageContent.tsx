@@ -47,8 +47,8 @@ export default function CustomContent() {
   };
 
   const handleGenerate = async () => {
-    if (!faceFile || !poster || !name) {
-      alert("Inserisci immagine e nome");
+    if (!faceFile || !poster) {
+      alert("Inserisci immagine");
       return;
     }
 
@@ -67,24 +67,26 @@ export default function CustomContent() {
         body: JSON.stringify({
           sourceImageUrl: faceUrl,
           targetImageUrl: fullPosterUrl,
-          name: name,
         }),
       });
 
-      const data = await res.json();
+      // 🔥 QUI STA IL FIX
+      const blob = await res.blob();
+      const imageUrl = URL.createObjectURL(blob);
 
-      if (data.image) {
-        setResult(data.image);
-      } else {
-        console.error(data);
-        alert("Errore generazione");
-      }
+      setResult(imageUrl);
+
     } catch (err) {
       console.error(err);
       alert("Errore generazione");
     }
 
     setLoading(false);
+  };
+
+  // 🔥 DOWNLOAD BLOCCATO (FAKE PAYWALL)
+  const handleDownload = () => {
+    alert("Devi sbloccare l'immagine prima di scaricarla");
   };
 
   return (
@@ -113,7 +115,7 @@ export default function CustomContent() {
 
           <input
             type="text"
-            placeholder="Nome e cognome"
+            placeholder="Nome e cognome (prossimo step)"
             value={name}
             onChange={(e) => setName(e.target.value)}
             style={styles.input}
@@ -137,10 +139,16 @@ export default function CustomContent() {
           <div style={styles.result}>
             <img src={result} style={styles.image} />
 
-            {/* overlay fake paywall (già pronto) */}
+            {/* overlay */}
             <div style={styles.overlay}>
-              <div style={styles.overlayText}>
-                Preview • Unlock to download
+              <div style={styles.overlayContent}>
+                <div style={styles.overlayText}>
+                  Watermarked Preview
+                </div>
+
+                <button style={styles.unlockButton} onClick={handleDownload}>
+                  Unlock HD Download
+                </button>
               </div>
             </div>
           </div>
@@ -220,14 +228,28 @@ const styles = {
     position: "absolute" as const,
     inset: 0,
     background: "rgba(0,0,0,0.4)",
-    backdropFilter: "blur(4px)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 12,
   },
+  overlayContent: {
+    display: "flex",
+    flexDirection: "column" as const,
+    alignItems: "center",
+    gap: 10,
+  },
   overlayText: {
     fontSize: 14,
     opacity: 0.8,
+  },
+  unlockButton: {
+    padding: "10px 16px",
+    borderRadius: 10,
+    border: "none",
+    background: "#ffffff",
+    color: "#000",
+    fontWeight: "bold",
+    cursor: "pointer",
   },
 };
