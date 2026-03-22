@@ -79,7 +79,6 @@ export default function CustomContent() {
         console.error(data);
         alert("Errore generazione");
       }
-
     } catch (err) {
       console.error(err);
       alert("Errore generazione");
@@ -108,7 +107,7 @@ export default function CustomContent() {
         type="text"
         placeholder="Nome e cognome"
         value={name}
-        onChange={(e) => setName(e.target.value)}
+        onChange={(e) => setName(e.target.value.toUpperCase())}
         style={styles.input}
       />
 
@@ -120,7 +119,24 @@ export default function CustomContent() {
 
       {result && (
         <div style={styles.result}>
-          <img src={result} style={styles.image} />
+          <div style={styles.previewWrapper}>
+            
+            {/* IMMAGINE BASE COLORI */}
+            <img src={`${result}?q=40`} style={styles.image} />
+
+            {/* META' DESTRA B/N */}
+            <img src={`${result}?q=40`} style={styles.imageBW} />
+
+            {/* WATERMARK PATTERN */}
+            <div style={styles.watermarkPattern}>
+              {Array.from({ length: 18 }).map((_, i) => (
+                <div key={i}>
+                  FILMFACE FILMFACE FILMFACE FILMFACE
+                </div>
+              ))}
+            </div>
+
+          </div>
         </div>
       )}
     </div>
@@ -155,6 +171,7 @@ const styles = {
     borderRadius: 8,
     border: "none",
     width: 200,
+    textAlign: "center" as const,
   },
   button: {
     marginTop: 20,
@@ -169,8 +186,39 @@ const styles = {
   result: {
     marginTop: 30,
   },
+  previewWrapper: {
+    position: "relative" as const,
+    display: "inline-block",
+  },
   image: {
     width: 300,
     borderRadius: 10,
+  },
+  imageBW: {
+    position: "absolute" as const,
+    top: 0,
+    left: "50%",
+    width: "50%",
+    height: "100%",
+    objectFit: "cover" as const,
+    filter: "grayscale(100%)",
+    borderTopRightRadius: 10,
+    borderBottomRightRadius: 10,
+  },
+  watermarkPattern: {
+    position: "absolute" as const,
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    display: "flex",
+    flexDirection: "column" as const,
+    justifyContent: "space-between",
+    opacity: 0.15,
+    transform: "rotate(-20deg)",
+    pointerEvents: "none" as const,
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "white",
   },
 };
