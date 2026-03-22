@@ -10,7 +10,7 @@ export default function CustomContent() {
   const [hdImage, setHdImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // preview volto
+  // 🔥 preview volto
   useEffect(() => {
     if (!faceFile) return;
 
@@ -20,14 +20,14 @@ export default function CustomContent() {
     return () => URL.revokeObjectURL(url);
   }, [faceFile]);
 
-  // cleanup result
+  // 🔥 cleanup result
   useEffect(() => {
     return () => {
       if (result) URL.revokeObjectURL(result);
     };
   }, [result]);
 
-  // upload cloudinary
+  // 🔥 upload cloudinary
   const uploadToCloudinary = async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -53,7 +53,7 @@ export default function CustomContent() {
     return data.secure_url;
   };
 
-  // GENERATE
+  // 🔥 GENERATE
   const handleGenerate = async () => {
     if (!faceFile) {
       alert("Inserisci un'immagine");
@@ -72,7 +72,10 @@ export default function CustomContent() {
     try {
       const faceUrl = await uploadToCloudinary(faceFile);
 
-      const fullPosterUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/posters/wolf-empty.jpg`;
+      // ✅ URL ASSOLUTO (FONDAMENTALE PER REPLICATE)
+      const fullPosterUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/posters/wolf-fumatore.jpg`;
+
+      console.log("POSTER:", fullPosterUrl);
 
       const res = await fetch("/api/generate/roop", {
         method: "POST",
@@ -90,12 +93,12 @@ export default function CustomContent() {
         throw new Error("Errore generazione");
       }
 
-      // PREVIEW
+      // 🔥 PREVIEW (watermark)
       const blob = await res.blob();
       const previewUrl = URL.createObjectURL(blob);
       setResult(previewUrl);
 
-      // HD BASE64
+      // 🔥 HD
       const base64 = res.headers.get("x-hd-image");
 
       if (base64) {
@@ -112,7 +115,7 @@ export default function CustomContent() {
     setLoading(false);
   };
 
-  // DOWNLOAD DIRETTO (molto meglio di Stripe per ora)
+  // 🔥 DOWNLOAD
   const handleDownload = () => {
     if (!hdImage) return;
 
@@ -127,9 +130,9 @@ export default function CustomContent() {
       <div style={styles.container}>
         <h1 style={styles.title}>Create your poster</h1>
 
-        {/* poster base */}
+        {/* ✅ POSTER CORRETTO */}
         <img
-          src="/posters/wolf-empty.jpg"
+          src="/posters/wolf-fumatore.jpg"
           style={styles.poster}
         />
 
