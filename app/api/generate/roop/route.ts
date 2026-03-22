@@ -47,15 +47,16 @@ export async function POST(req: Request) {
       throw new Error("Errore roop: immagine non generata");
     }
 
-    // 🔥 STEP 2 — TEXT REPLACE (FLUX FILL PRO)
+    console.log("✅ ROOP OK:", roopImageUrl);
 
+    // 🔥 STEP 2 — TEXT REPLACE (FLUX FILL PRO)
     const fluxOutput = await replicate.run(
       "black-forest-labs/flux-fill-pro",
       {
         input: {
           image: roopImageUrl,
-          mask: `${process.env.NEXT_PUBLIC_BASE_URL}/masks/wolf-text-mask.png`,
-          prompt: `Replace the text "Leonardo DiCaprio" with "${name}".
+          mask: "https://filmface.vercel.app/masks/wolf-text-mask.png",
+          prompt: `Replace the existing text in the masked area with "${name}".
 
 Keep EXACTLY:
 - same font
@@ -66,12 +67,13 @@ Keep EXACTLY:
 - same lighting
 - same texture
 
-The result must look identical to the original movie poster.
-
 Do not modify anything else.`,
+          output_format: "jpg",
         },
       }
     );
+
+    console.log("🔥 FLUX OUTPUT:", fluxOutput);
 
     let finalImageUrl: string | null = null;
 
@@ -107,6 +109,7 @@ Do not modify anything else.`,
     });
 
   } catch (error: any) {
+    console.error("❌ ERRORE:", error);
     return Response.json({
       success: false,
       error: error.message,
