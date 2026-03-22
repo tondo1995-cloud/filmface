@@ -8,10 +8,10 @@ export default function CustomContent() {
   const poster = searchParams.get("poster");
 
   const [faceFile, setFaceFile] = useState<File | null>(null);
-  const [name, setName] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [name, setName] = useState("");
 
   useEffect(() => {
     if (faceFile) {
@@ -47,7 +47,7 @@ export default function CustomContent() {
   };
 
   const handleGenerate = async () => {
-    if (!faceFile || !poster || !name.trim()) {
+    if (!faceFile || !poster || !name) {
       alert("Inserisci nome e immagine");
       return;
     }
@@ -68,7 +68,7 @@ export default function CustomContent() {
         body: JSON.stringify({
           sourceImageUrl: faceUrl,
           targetImageUrl: fullPosterUrl,
-          name: name.trim(),
+          name: name,
         }),
       });
 
@@ -78,8 +78,6 @@ export default function CustomContent() {
 
       if (typeof data.image === "string") {
         imageUrl = data.image;
-      } else if (data.raw?.[0]?.url) {
-        imageUrl = data.raw[0].url;
       }
 
       if (imageUrl) {
@@ -88,6 +86,7 @@ export default function CustomContent() {
         console.error("❌ API:", data);
         alert("Errore generazione");
       }
+
     } catch (err) {
       console.error(err);
       alert("Errore generazione");
@@ -124,39 +123,36 @@ export default function CustomContent() {
         <img
           src={`${process.env.NEXT_PUBLIC_BASE_URL}${poster}`}
           style={styles.poster}
-          alt="Poster"
         />
       )}
 
+      {/* 📸 UPLOAD */}
       <input
         type="file"
-        accept="image/*"
         onChange={(e) => setFaceFile(e.target.files?.[0] || null)}
       />
 
+      {preview && <img src={preview} style={styles.preview} />}
+
+      {/* ✍️ INPUT NOME */}
       <input
         type="text"
         placeholder="Nome e cognome"
         value={name}
-        onChange={(e) => setName(e.target.value.toUpperCase())}
+        onChange={(e) => setName(e.target.value)}
         style={styles.input}
       />
 
-      {preview && <img src={preview} style={styles.preview} alt="Preview volto" />}
-
+      {/* 🚀 GENERATE */}
       <button style={styles.button} onClick={handleGenerate}>
         {loading ? "Generating..." : "Generate"}
       </button>
 
+      {/* 🎬 RISULTATO */}
       {result && (
         <div style={styles.result}>
           <div style={styles.previewWrapper}>
-            <img
-              src={`${result}?q=30`}
-              style={styles.image}
-              alt="Preview risultato"
-            />
-
+            <img src={`${result}?q=30`} style={styles.image} />
             <div style={styles.watermark}>PREVIEW</div>
           </div>
 
@@ -186,21 +182,17 @@ const styles = {
     marginBottom: 20,
     borderRadius: 10,
   },
+  preview: {
+    width: 150,
+    marginTop: 10,
+    borderRadius: 8,
+  },
   input: {
     marginTop: 15,
     padding: 10,
     borderRadius: 8,
     border: "none",
     width: 220,
-    textAlign: "center" as const,
-    display: "block",
-    marginLeft: "auto",
-    marginRight: "auto",
-  },
-  preview: {
-    width: 150,
-    marginTop: 10,
-    borderRadius: 8,
   },
   button: {
     marginTop: 20,

@@ -4,11 +4,17 @@ export async function POST(req: Request) {
   try {
     const { sourceImageUrl, targetImageUrl, name } = await req.json();
 
+    if (!sourceImageUrl || !targetImageUrl) {
+      throw new Error("Missing images");
+    }
+
     const replicate = new Replicate({
       auth: process.env.REPLICATE_API_TOKEN!,
     });
 
-    // 🔥 STEP 1 — FACE SWAP (ROOP)
+    // =========================
+    // 1. FACE SWAP (ROOP)
+    // =========================
     const roopOutput = await replicate.run(
       "okaris/roop:8c1e100ecabb3151cf1e6c62879b6de7a4b84602de464ed249b6cff0b86211d8",
       {
@@ -19,56 +25,54 @@ export async function POST(req: Request) {
       }
     );
 
+    console.log("🔥 ROOP OUTPUT:", roopOutput);
+
     let roopImageUrl: string | null = null;
 
-    if (roopOutput && typeof roopOutput === "object") {
-      if ("url" in roopOutput && typeof roopOutput.url === "string") {
-        roopImageUrl = roopOutput.url;
-      }
-    }
-
-    if (!roopImageUrl && Array.isArray(roopOutput)) {
+    if (typeof roopOutput === "string") {
+      roopImageUrl = roopOutput;
+    } else if (Array.isArray(roopOutput)) {
       const first = roopOutput[0];
-      if (typeof first === "string") {
-        roopImageUrl = first;
-      } else if (first && typeof first === "object" && "url" in first) {
-        roopImageUrl = (first as any).url;
-      }
-    }
-
-    if (!roopImageUrl && roopOutput?.toString) {
-      const maybe = roopOutput.toString();
-      if (maybe.startsWith("http")) {
-        roopImageUrl = maybe;
+      if (typeof first === "string") roopImageUrl = first;
+      else if (first?.url) roopImageUrl = first.url;
+    } else if (roopOutput && typeof roopOutput === "object") {
+      if ("url" in roopOutput) {
+        roopImageUrl = (roopOutput as any).url;
       }
     }
 
     if (!roopImageUrl) {
-      throw new Error("Errore roop: immagine non generata");
+      throw new Error("ROOP non ha restituito immagine");
     }
 
-    console.log("✅ ROOP OK:", roopImageUrl);
+    // =========================
+    // 2. SE NON C’È NOME → RETURN
+    // =========================
+    if (!name || name.trim() === "") {
+      return Response.json({
+        success: true,
+        image: roopImageUrl,
+      });
+    }
 
-    // 🔥 STEP 2 — TEXT REPLACE (FLUX FILL PRO)
+    // =========================
+    // 3. TEXT REPLACEMENT (FLUX)
+    // =========================
     const fluxOutput = await replicate.run(
       "black-forest-labs/flux-fill-pro",
       {
         input: {
           image: roopImageUrl,
+
+          // ✅ MASK CORRETTA
           mask: "https://filmface.vercel.app/masks/wolf-text-mask.png",
-          prompt: `Replace the existing text in the masked area with "${name}".
 
-Keep EXACTLY:
-- same font
-- same size
-- same spacing
-- same alignment
-- same color
-- same lighting
-- same texture
+          prompt: `Replace the text in the masked area with "${name}". Keep identical font, size, color and style.`,
 
-Do not modify anything else.`,
-          output_format: "jpg",
+          steps: 40,
+          guidance: 60,
+          safety_tolerance: 2,
+          output_format: "jpg"
         },
       }
     );
@@ -77,30 +81,20 @@ Do not modify anything else.`,
 
     let finalImageUrl: string | null = null;
 
-    if (fluxOutput && typeof fluxOutput === "object") {
-      if ("url" in fluxOutput && typeof fluxOutput.url === "string") {
-        finalImageUrl = fluxOutput.url;
-      }
-    }
-
-    if (!finalImageUrl && Array.isArray(fluxOutput)) {
+    if (typeof fluxOutput === "string") {
+      finalImageUrl = fluxOutput;
+    } else if (Array.isArray(fluxOutput)) {
       const first = fluxOutput[0];
-      if (typeof first === "string") {
-        finalImageUrl = first;
-      } else if (first && typeof first === "object" && "url" in first) {
-        finalImageUrl = (first as any).url;
-      }
-    }
-
-    if (!finalImageUrl && fluxOutput?.toString) {
-      const maybe = fluxOutput.toString();
-      if (maybe.startsWith("http")) {
-        finalImageUrl = maybe;
+      if (typeof first === "string") finalImageUrl = first;
+      else if (first?.url) finalImageUrl = first.url;
+    } else if (fluxOutput && typeof fluxOutput === "object") {
+      if ("url" in fluxOutput) {
+        finalImageUrl = (fluxOutput as any).url;
       }
     }
 
     if (!finalImageUrl) {
-      throw new Error("Errore flux: immagine finale non generata");
+      throw new Error("FLUX non ha restituito immagine");
     }
 
     return Response.json({
@@ -109,7 +103,8 @@ Do not modify anything else.`,
     });
 
   } catch (error: any) {
-    console.error("❌ ERRORE:", error);
+    console.error("❌ ERROR:", error);
+
     return Response.json({
       success: false,
       error: error.message,
