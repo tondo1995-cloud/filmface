@@ -1,10 +1,24 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function SuccessContent() {
-  const params = useSearchParams();
-  const image = params.get("image");
+  const [image, setImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/generate/hd")
+      .then((res) => res.blob())
+      .then((blob) => {
+        const url = URL.createObjectURL(blob);
+        setImage(url);
+
+        // download automatico
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "filmface-hd.jpg";
+        a.click();
+      });
+  }, []);
 
   return (
     <div style={{ padding: 40, textAlign: "center" }}>
@@ -13,11 +27,9 @@ export default function SuccessContent() {
       {image && (
         <>
           <img src={image} style={{ width: 300 }} />
-
-          <br /><br />
-
-          <a href={image} download>
-            <button>Scarica immagine</button>
+          <br />
+          <a href={image} download="filmface-hd.jpg">
+            <button>Scarica di nuovo</button>
           </a>
         </>
       )}

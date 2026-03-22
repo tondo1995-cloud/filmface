@@ -8,7 +8,6 @@ export default function CustomContent() {
   const poster = searchParams.get("poster");
 
   const [faceFile, setFaceFile] = useState<File | null>(null);
-  const [name, setName] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -46,6 +45,7 @@ export default function CustomContent() {
     return data.secure_url;
   };
 
+  // 🔥 GENERATE
   const handleGenerate = async () => {
     if (!faceFile || !poster) {
       alert("Inserisci immagine");
@@ -70,12 +70,11 @@ export default function CustomContent() {
         }),
       });
 
-      // 🔥 QUI STA IL FIX
+      // 🔥 IMPORTANTE: blob (non JSON)
       const blob = await res.blob();
       const imageUrl = URL.createObjectURL(blob);
 
       setResult(imageUrl);
-
     } catch (err) {
       console.error(err);
       alert("Errore generazione");
@@ -84,15 +83,29 @@ export default function CustomContent() {
     setLoading(false);
   };
 
-  // 🔥 DOWNLOAD BLOCCATO (FAKE PAYWALL)
-  const handleDownload = () => {
-    alert("Devi sbloccare l'immagine prima di scaricarla");
+  // 🔥 STRIPE CHECKOUT
+  const handleUnlock = async () => {
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+      });
+
+      const data = await res.json();
+
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert("Errore pagamento");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Errore pagamento");
+    }
   };
 
   return (
     <div style={styles.page}>
       <div style={styles.container}>
-        
         <h1 style={styles.title}>Create your poster</h1>
 
         {/* POSTER */}
@@ -105,31 +118,17 @@ export default function CustomContent() {
           </div>
         )}
 
-        {/* INPUTS */}
-        <div style={styles.controls}>
-          <input
-            type="file"
-            onChange={(e) => setFaceFile(e.target.files?.[0] || null)}
-            style={styles.file}
-          />
+        {/* INPUT */}
+        <input
+          type="file"
+          onChange={(e) => setFaceFile(e.target.files?.[0] || null)}
+          style={styles.file}
+        />
 
-          <input
-            type="text"
-            placeholder="Nome e cognome (prossimo step)"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            style={styles.input}
-          />
-        </div>
+        {/* PREVIEW */}
+        {preview && <img src={preview} style={styles.preview} />}
 
-        {/* PREVIEW FACE */}
-        {preview && (
-          <div style={styles.previewBox}>
-            <img src={preview} style={styles.preview} />
-          </div>
-        )}
-
-        {/* BUTTON */}
+        {/* GENERATE */}
         <button style={styles.button} onClick={handleGenerate}>
           {loading ? "Generating..." : "Generate"}
         </button>
@@ -139,15 +138,15 @@ export default function CustomContent() {
           <div style={styles.result}>
             <img src={result} style={styles.image} />
 
-            {/* overlay */}
+            {/* OVERLAY + PAY */}
             <div style={styles.overlay}>
               <div style={styles.overlayContent}>
                 <div style={styles.overlayText}>
                   Watermarked Preview
                 </div>
 
-                <button style={styles.unlockButton} onClick={handleDownload}>
-                  Unlock HD Download
+                <button style={styles.unlockButton} onClick={handleUnlock}>
+                  Unlock HD — €4.99
                 </button>
               </div>
             </div>
@@ -175,7 +174,6 @@ const styles = {
   title: {
     fontSize: 22,
     marginBottom: 20,
-    opacity: 0.9,
   },
   posterWrapper: {
     marginBottom: 20,
@@ -184,26 +182,12 @@ const styles = {
     width: "100%",
     borderRadius: 12,
   },
-  controls: {
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: 10,
-  },
   file: {
-    color: "white",
-  },
-  input: {
-    padding: 12,
-    borderRadius: 10,
-    border: "none",
-    background: "#1a1a22",
-    color: "white",
-  },
-  previewBox: {
-    marginTop: 15,
+    marginBottom: 10,
   },
   preview: {
     width: 100,
+    marginTop: 10,
     borderRadius: 10,
   },
   button: {
@@ -211,10 +195,10 @@ const styles = {
     padding: 14,
     borderRadius: 12,
     border: "none",
-    background: "linear-gradient(135deg,#6c5cff,#8f7bff)",
+    background: "#6c5cff",
     color: "white",
-    fontWeight: "bold",
     cursor: "pointer",
+    width: "100%",
   },
   result: {
     marginTop: 30,
@@ -227,28 +211,24 @@ const styles = {
   overlay: {
     position: "absolute" as const,
     inset: 0,
-    background: "rgba(0,0,0,0.4)",
+    background: "rgba(0,0,0,0.5)",
     display: "flex",
-    alignItems: "center",
     justifyContent: "center",
+    alignItems: "center",
     borderRadius: 12,
   },
   overlayContent: {
-    display: "flex",
-    flexDirection: "column" as const,
-    alignItems: "center",
-    gap: 10,
+    textAlign: "center" as const,
   },
   overlayText: {
-    fontSize: 14,
-    opacity: 0.8,
+    marginBottom: 10,
   },
   unlockButton: {
-    padding: "10px 16px",
+    padding: "12px 18px",
     borderRadius: 10,
     border: "none",
-    background: "#ffffff",
-    color: "#000",
+    background: "#00c853",
+    color: "white",
     fontWeight: "bold",
     cursor: "pointer",
   },
