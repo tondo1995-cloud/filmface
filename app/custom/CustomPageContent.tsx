@@ -10,6 +10,7 @@ export default function CustomContent() {
   const [faceFile, setFaceFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
+  const [hdUrl, setHdUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -45,7 +46,6 @@ export default function CustomContent() {
     return data.secure_url;
   };
 
-  // 🔥 GENERATE
   const handleGenerate = async () => {
     if (!faceFile || !poster) {
       alert("Inserisci immagine");
@@ -70,11 +70,14 @@ export default function CustomContent() {
         }),
       });
 
-      // 🔥 IMPORTANTE: blob (non JSON)
       const blob = await res.blob();
-      const imageUrl = URL.createObjectURL(blob);
+      const previewUrl = URL.createObjectURL(blob);
+      setResult(previewUrl);
 
-      setResult(imageUrl);
+      // 🔥 URL HD dal backend
+      const hd = res.headers.get("x-hd-url");
+      if (hd) setHdUrl(hd);
+
     } catch (err) {
       console.error(err);
       alert("Errore generazione");
@@ -83,11 +86,21 @@ export default function CustomContent() {
     setLoading(false);
   };
 
-  // 🔥 STRIPE CHECKOUT
   const handleUnlock = async () => {
     try {
+      if (!hdUrl) {
+        alert("Immagine HD non disponibile");
+        return;
+      }
+
       const res = await fetch("/api/checkout", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          imageUrl: hdUrl,
+        }),
       });
 
       const data = await res.json();
@@ -108,47 +121,32 @@ export default function CustomContent() {
       <div style={styles.container}>
         <h1 style={styles.title}>Create your poster</h1>
 
-        {/* POSTER */}
         {poster && (
-          <div style={styles.posterWrapper}>
-            <img
-              src={`${process.env.NEXT_PUBLIC_BASE_URL}${poster}`}
-              style={styles.poster}
-            />
-          </div>
+          <img
+            src={`${process.env.NEXT_PUBLIC_BASE_URL}${poster}`}
+            style={styles.poster}
+          />
         )}
 
-        {/* INPUT */}
         <input
           type="file"
           onChange={(e) => setFaceFile(e.target.files?.[0] || null)}
-          style={styles.file}
         />
 
-        {/* PREVIEW */}
         {preview && <img src={preview} style={styles.preview} />}
 
-        {/* GENERATE */}
         <button style={styles.button} onClick={handleGenerate}>
           {loading ? "Generating..." : "Generate"}
         </button>
 
-        {/* RESULT */}
         {result && (
           <div style={styles.result}>
             <img src={result} style={styles.image} />
 
-            {/* OVERLAY + PAY */}
             <div style={styles.overlay}>
-              <div style={styles.overlayContent}>
-                <div style={styles.overlayText}>
-                  Watermarked Preview
-                </div>
-
-                <button style={styles.unlockButton} onClick={handleUnlock}>
-                  Unlock HD — €4.99
-                </button>
-              </div>
+              <button style={styles.unlockButton} onClick={handleUnlock}>
+                Unlock HD — €2.99
+              </button>
             </div>
           </div>
         )}
@@ -165,25 +163,18 @@ const styles = {
     justifyContent: "center",
     alignItems: "center",
     color: "white",
-    fontFamily: "sans-serif",
   },
   container: {
     width: 360,
     textAlign: "center" as const,
   },
   title: {
-    fontSize: 22,
-    marginBottom: 20,
-  },
-  posterWrapper: {
     marginBottom: 20,
   },
   poster: {
     width: "100%",
     borderRadius: 12,
-  },
-  file: {
-    marginBottom: 10,
+    marginBottom: 20,
   },
   preview: {
     width: 100,
@@ -197,7 +188,6 @@ const styles = {
     border: "none",
     background: "#6c5cff",
     color: "white",
-    cursor: "pointer",
     width: "100%",
   },
   result: {
@@ -211,25 +201,17 @@ const styles = {
   overlay: {
     position: "absolute" as const,
     inset: 0,
-    background: "rgba(0,0,0,0.5)",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 12,
-  },
-  overlayContent: {
-    textAlign: "center" as const,
-  },
-  overlayText: {
-    marginBottom: 10,
+    background: "rgba(0,0,0,0.4)",
   },
   unlockButton: {
-    padding: "12px 18px",
+    padding: 14,
     borderRadius: 10,
     border: "none",
     background: "#00c853",
     color: "white",
     fontWeight: "bold",
-    cursor: "pointer",
   },
 };

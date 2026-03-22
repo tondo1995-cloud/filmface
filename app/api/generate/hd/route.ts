@@ -1,13 +1,15 @@
-import { getLastHDImage } from "../roop/route";
-
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const imageUrl = getLastHDImage();
+    const { searchParams } = new URL(req.url);
+    const imageUrl = searchParams.get("image");
 
     if (!imageUrl) {
-      return Response.json({ error: "No image available" }, { status: 404 });
+      return Response.json(
+        { error: "Missing image URL" },
+        { status: 400 }
+      );
     }
 
     const res = await fetch(imageUrl);
@@ -23,11 +25,12 @@ export async function GET() {
         "Content-Type": "image/jpeg",
       },
     });
-  } catch (err) {
-    console.error("HD ERROR:", err);
+
+  } catch (err: any) {
+    console.error(err);
 
     return Response.json(
-      { error: "Errore recupero immagine HD" },
+      { error: err.message },
       { status: 500 }
     );
   }
