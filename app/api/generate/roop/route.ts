@@ -1,7 +1,8 @@
 import Replicate from "replicate";
 import sharp from "sharp";
 
-// 🔥 ESTRAZIONE URL DA REPLICATE
+export const runtime = "nodejs";
+
 function extractReplicateUrl(output: any): string | null {
   if (!output) return null;
 
@@ -44,16 +45,18 @@ function extractReplicateUrl(output: any): string | null {
   return null;
 }
 
-// 🔥 WATERMARK FUNCTION
-async function applyWatermark(imageUrl: string) {
-  // scarica immagine finale
+async function applyWatermark(imageUrl: string): Promise<Buffer> {
   const imageRes = await fetch(imageUrl);
+  if (!imageRes.ok) {
+    throw new Error("Download immagine finale fallito");
+  }
   const imageBuffer = Buffer.from(await imageRes.arrayBuffer());
 
-  // scarica watermark PNG
-  const watermarkRes = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/watermarks/watermark1.png`
-  );
+  const watermarkUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/watermarks/watermark1.png`;
+  const watermarkRes = await fetch(watermarkUrl);
+  if (!watermarkRes.ok) {
+    throw new Error("Download watermark fallito");
+  }
   const watermarkBuffer = Buffer.from(await watermarkRes.arrayBuffer());
 
   const image = sharp(imageBuffer);
@@ -63,14 +66,12 @@ async function applyWatermark(imageUrl: string) {
     throw new Error("Impossibile leggere dimensioni immagine");
   }
 
-  // ridimensiona watermark alla stessa dimensione
   const resizedWatermark = await sharp(watermarkBuffer)
     .resize(metadata.width, metadata.height)
     .png()
     .toBuffer();
 
-  // composizione
-  const final = await image
+  return await image
     .composite([
       {
         input: resizedWatermark,
@@ -80,8 +81,6 @@ async function applyWatermark(imageUrl: string) {
     ])
     .jpeg({ quality: 95 })
     .toBuffer();
-
-  return final;
 }
 
 export async function POST(req: Request) {
@@ -96,7 +95,6 @@ export async function POST(req: Request) {
       auth: process.env.REPLICATE_API_TOKEN!,
     });
 
-    // 🔥 STEP 1 — ROOP
     const roopOutput = await replicate.run(
       "okaris/roop:8c1e100ecabb3151cf1e6c62879b6de7a4b84602de464ed249b6cff0b86211d8",
       {
@@ -115,7 +113,6 @@ export async function POST(req: Request) {
 
     console.log("ROOP OK:", roopImageUrl);
 
-    // 🔥 STEP 2 — FLUX (RIMOZIONE TESTO)
     const maskUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/masks/wolf-text-mask.png`;
 
     const prediction = await replicate.predictions.create({
@@ -163,16 +160,15 @@ Do NOT modify anything else.
 
     console.log("FLUX OK:", finalImageUrl);
 
-    // 🔥 STEP 3 — WATERMARK
     const watermarkedBuffer = await applyWatermark(finalImageUrl);
+    const body = new Uint8Array(watermarkedBuffer);
 
-    // 🔥 RETURN FILE (NON URL)
-    return new Response(watermarkedBuffer, {
+    return new Response(body, {
       headers: {
         "Content-Type": "image/jpeg",
+        "Cache-Control": "no-store",
       },
     });
-
   } catch (error: any) {
     console.error("🔥 ERROR:", error);
 
