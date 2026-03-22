@@ -1,20 +1,16 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 
 export default function CustomContent() {
-  const searchParams = useSearchParams();
-  const poster = searchParams.get("poster");
-
   const [faceFile, setFaceFile] = useState<File | null>(null);
   const [name, setName] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
-  const [hdUrl, setHdUrl] = useState<string | null>(null);
+  const [hdImage, setHdImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // 🔥 preview volto
+  // preview volto
   useEffect(() => {
     if (!faceFile) return;
 
@@ -24,14 +20,14 @@ export default function CustomContent() {
     return () => URL.revokeObjectURL(url);
   }, [faceFile]);
 
-  // 🔥 cleanup preview finale
+  // cleanup result
   useEffect(() => {
     return () => {
       if (result) URL.revokeObjectURL(result);
-      if (hdUrl) URL.revokeObjectURL(hdUrl);
     };
-  }, [result, hdUrl]);
+  }, [result]);
 
+  // upload cloudinary
   const uploadToCloudinary = async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -57,7 +53,7 @@ export default function CustomContent() {
     return data.secure_url;
   };
 
-  // 🔥 GENERATE
+  // GENERATE
   const handleGenerate = async () => {
     if (!faceFile) {
       alert("Inserisci un'immagine");
@@ -71,12 +67,11 @@ export default function CustomContent() {
 
     setLoading(true);
     setResult(null);
-    setHdUrl(null);
+    setHdImage(null);
 
     try {
       const faceUrl = await uploadToCloudinary(faceFile);
 
-      // 🔥 poster base SENZA testo
       const fullPosterUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/posters/wolf-empty.jpg`;
 
       const res = await fetch("/api/generate/roop", {
@@ -95,27 +90,18 @@ export default function CustomContent() {
         throw new Error("Errore generazione");
       }
 
-      // 🔥 PREVIEW (watermark)
+      // PREVIEW
       const blob = await res.blob();
       const previewUrl = URL.createObjectURL(blob);
       setResult(previewUrl);
 
-      // 🔥 HD IMAGE (BASE64 → BLOB)
+      // HD BASE64
       const base64 = res.headers.get("x-hd-image");
 
       if (base64) {
-        const binary = atob(base64);
-        const bytes = Uint8Array.from(binary, (c) =>
-          c.charCodeAt(0)
-        );
-        const hdBlob = new Blob([bytes], {
-          type: "image/jpeg",
-        });
-
-        const hdObjectUrl = URL.createObjectURL(hdBlob);
-        setHdUrl(hdObjectUrl);
+        setHdImage(`data:image/jpeg;base64,${base64}`);
       } else {
-        console.error("HD image missing");
+        console.error("HD missing");
       }
 
     } catch (err) {
@@ -126,37 +112,14 @@ export default function CustomContent() {
     setLoading(false);
   };
 
-  // 🔥 STRIPE
-  const handleUnlock = async () => {
-    if (!hdUrl) {
-      alert("Immagine HD non disponibile");
-      return;
-    }
+  // DOWNLOAD DIRETTO (molto meglio di Stripe per ora)
+  const handleDownload = () => {
+    if (!hdImage) return;
 
-    try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          imageUrl: hdUrl,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        console.error(data);
-        alert("Errore pagamento");
-      }
-
-    } catch (err) {
-      console.error(err);
-      alert("Errore pagamento");
-    }
+    const a = document.createElement("a");
+    a.href = hdImage;
+    a.download = "filmface-hd.jpg";
+    a.click();
   };
 
   return (
@@ -166,7 +129,7 @@ export default function CustomContent() {
 
         {/* poster base */}
         <img
-          src={`${process.env.NEXT_PUBLIC_BASE_URL}/posters/wolf-empty.jpg`}
+          src="/posters/wolf-empty.jpg"
           style={styles.poster}
         />
 
@@ -179,7 +142,7 @@ export default function CustomContent() {
           }
         />
 
-        {/* INPUT NOME */}
+        {/* INPUT */}
         <input
           type="text"
           placeholder="Nome e cognome"
@@ -212,14 +175,10 @@ export default function CustomContent() {
 
             <div style={styles.overlay}>
               <button
-                style={{
-                  ...styles.unlockButton,
-                  opacity: hdUrl ? 1 : 0.5,
-                }}
-                onClick={handleUnlock}
-                disabled={!hdUrl}
+                style={styles.unlockButton}
+                onClick={handleDownload}
               >
-                Unlock HD — €2.99
+                Download HD
               </button>
             </div>
           </div>
