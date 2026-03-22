@@ -8,6 +8,7 @@ export default function CustomContent() {
   const poster = searchParams.get("poster");
 
   const [faceFile, setFaceFile] = useState<File | null>(null);
+  const [name, setName] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -46,8 +47,8 @@ export default function CustomContent() {
   };
 
   const handleGenerate = async () => {
-    if (!faceFile || !poster) {
-      alert("Seleziona immagine e poster");
+    if (!faceFile || !poster || !name.trim()) {
+      alert("Inserisci nome e immagine");
       return;
     }
 
@@ -67,6 +68,7 @@ export default function CustomContent() {
         body: JSON.stringify({
           sourceImageUrl: faceUrl,
           targetImageUrl: fullPosterUrl,
+          name: name.trim(),
         }),
       });
 
@@ -86,7 +88,6 @@ export default function CustomContent() {
         console.error("❌ API:", data);
         alert("Errore generazione");
       }
-
     } catch (err) {
       console.error(err);
       alert("Errore generazione");
@@ -123,15 +124,25 @@ export default function CustomContent() {
         <img
           src={`${process.env.NEXT_PUBLIC_BASE_URL}${poster}`}
           style={styles.poster}
+          alt="Poster"
         />
       )}
 
       <input
         type="file"
+        accept="image/*"
         onChange={(e) => setFaceFile(e.target.files?.[0] || null)}
       />
 
-      {preview && <img src={preview} style={styles.preview} />}
+      <input
+        type="text"
+        placeholder="Nome e cognome"
+        value={name}
+        onChange={(e) => setName(e.target.value.toUpperCase())}
+        style={styles.input}
+      />
+
+      {preview && <img src={preview} style={styles.preview} alt="Preview volto" />}
 
       <button style={styles.button} onClick={handleGenerate}>
         {loading ? "Generating..." : "Generate"}
@@ -139,20 +150,16 @@ export default function CustomContent() {
 
       {result && (
         <div style={styles.result}>
-          
-          {/* 🔥 PREVIEW BLOCCATA */}
           <div style={styles.previewWrapper}>
             <img
               src={`${result}?q=30`}
               style={styles.image}
+              alt="Preview risultato"
             />
 
-            <div style={styles.watermark}>
-              PREVIEW
-            </div>
+            <div style={styles.watermark}>PREVIEW</div>
           </div>
 
-          {/* 💳 CTA PAGAMENTO */}
           <button style={styles.payButton} onClick={handleCheckout}>
             Download HD – €2.99
           </button>
@@ -178,6 +185,17 @@ const styles = {
     width: 200,
     marginBottom: 20,
     borderRadius: 10,
+  },
+  input: {
+    marginTop: 15,
+    padding: 10,
+    borderRadius: 8,
+    border: "none",
+    width: 220,
+    textAlign: "center" as const,
+    display: "block",
+    marginLeft: "auto",
+    marginRight: "auto",
   },
   preview: {
     width: 150,
