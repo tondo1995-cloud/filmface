@@ -7,27 +7,32 @@ export const runtime = "nodejs";
 function extractReplicateUrl(output: any): string | null {
   if (!output) return null;
 
-  // string
-  if (typeof output === "string" && output.startsWith("http")) {
-    return output;
-  }
+  // caso 1: stringa diretta
+  if (typeof output === "string") return output;
 
-  // array
+  // caso 2: array (tipico di Replicate)
   if (Array.isArray(output)) {
-    for (const item of output) {
-      if (typeof item === "string" && item.startsWith("http")) {
-        return item;
-      }
-      if (item?.url) return item.url;
-      if (item?.image) return item.image;
+    const first = output[0];
+
+    if (typeof first === "string") return first;
+
+    if (first?.url) return first.url;
+
+    if (first?.toString) {
+      const str = first.toString();
+      if (str.startsWith("http")) return str;
     }
   }
 
-  // object
-  if (typeof output === "object") {
-    if (output.url) return output.url;
-    if (output.image) return output.image;
+  // caso 3: oggetto
+  if (output?.url) return output.url;
+
+  if (output?.toString) {
+    const str = output.toString();
+    if (str.startsWith("http")) return str;
   }
+
+  console.error("❌ OUTPUT NON PARSABILE:", output);
 
   return null;
 }
