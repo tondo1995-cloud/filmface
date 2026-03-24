@@ -1,33 +1,12 @@
-"use client";
+import { Suspense } from "react";
+import SuccessContent from "./SuccessContent";
 
-import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+export const dynamic = "force-dynamic";
 
-export default function SuccessPage() {
-  const params = useSearchParams();
-  const imageUrl = params.get("image");
-
-  useEffect(() => {
-    if (!imageUrl) return;
-
-    const download = async () => {
-      const res = await fetch(imageUrl);
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "filmface-hd.jpg";
-      a.click();
-    };
-
-    download();
-  }, [imageUrl]);
-
+export default function Page() {
   return (
-    <div style={{ padding: 40 }}>
-      <h1>Pagamento completato</h1>
-      <p>Il download partirà automaticamente...</p>
-    </div>
+    <Suspense fallback={<div style={{ padding: 40 }}>Loading...</div>}>
+      <SuccessContent />
+    </Suspense>
   );
 }
