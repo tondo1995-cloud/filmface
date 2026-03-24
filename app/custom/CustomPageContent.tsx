@@ -9,7 +9,6 @@ export default function CustomContent() {
   const [hdUrl, setHdUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // preview volto
   useEffect(() => {
     if (!faceFile) return;
 
@@ -19,14 +18,12 @@ export default function CustomContent() {
     return () => URL.revokeObjectURL(url);
   }, [faceFile]);
 
-  // cleanup result
   useEffect(() => {
     return () => {
       if (result) URL.revokeObjectURL(result);
     };
   }, [result]);
 
-  // upload cloudinary
   const uploadToCloudinary = async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -46,16 +43,15 @@ export default function CustomContent() {
     const data = await res.json();
 
     if (!data.secure_url) {
-      throw new Error("Upload fallito Cloudinary");
+      throw new Error("Upload fallito");
     }
 
     return data.secure_url;
   };
 
-  // GENERATE (SOLO FACE SWAP)
   const handleGenerate = async () => {
     if (!faceFile) {
-      alert("Inserisci un'immagine");
+      alert("Carica una foto");
       return;
     }
 
@@ -81,22 +77,19 @@ export default function CustomContent() {
 
       if (!res.ok) {
         const text = await res.text();
-        console.error("BACKEND ERROR:", text);
         throw new Error(text);
       }
 
-      // preview (watermark)
       const blob = await res.blob();
       const previewUrl = URL.createObjectURL(blob);
       setResult(previewUrl);
 
-      // HD url
       const hd = res.headers.get("x-hd-url");
 
-      if (hd) {
+      if (hd && hd.startsWith("http")) {
         setHdUrl(hd);
       } else {
-        console.error("HD URL missing");
+        console.error("HD URL non valida:", hd);
       }
 
     } catch (err) {
@@ -107,65 +100,49 @@ export default function CustomContent() {
     setLoading(false);
   };
 
-  // DOWNLOAD HD
-  const handleDownload = async () => {
-  if (!hdUrl) {
-    alert("Immagine non disponibile");
-    return;
-  }
+  // 🔥 PAGAMENTO (NON download diretto)
+  const handleCheckout = async () => {
+    if (!hdUrl) return;
 
-  try {
-    const res = await fetch("/api/checkout", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        imageUrl: hdUrl,
-      }),
-    });
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          imageUrl: hdUrl,
+        }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (data.url) {
-      window.location.href = data.url; // 🔥 redirect a Stripe
-    } else {
-      console.error(data);
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert("Errore pagamento");
+      }
+    } catch (err) {
+      console.error(err);
       alert("Errore pagamento");
     }
-
-  } catch (err) {
-    console.error(err);
-    alert("Errore pagamento");
-  }
-};
+  };
 
   return (
     <div style={styles.page}>
       <div style={styles.container}>
-        <h1 style={styles.title}>Put your friend in the movie</h1>
+        <h1 style={styles.title}>Trasforma il tuo amico in un film</h1>
 
-        {/* poster base */}
-        <img
-          src="/posters/wolf-fumatore.jpg"
-          style={styles.poster}
-        />
+        <img src="/posters/wolf-fumatore.jpg" style={styles.poster} />
 
-        {/* upload */}
         <input
           type="file"
           accept="image/*"
-          onChange={(e) =>
-            setFaceFile(e.target.files?.[0] || null)
-          }
+          onChange={(e) => setFaceFile(e.target.files?.[0] || null)}
         />
 
-        {/* preview volto */}
-        {preview && (
-          <img src={preview} style={styles.preview} />
-        )}
+        {preview && <img src={preview} style={styles.preview} />}
 
-        {/* generate */}
         <button
           style={{
             ...styles.button,
@@ -174,24 +151,20 @@ export default function CustomContent() {
           onClick={handleGenerate}
           disabled={loading}
         >
-          {loading ? "Generating..." : "Generate"}
+          {loading ? "Generazione..." : "Crea la locandina"}
         </button>
 
-        {/* risultato */}
         {result && (
           <div style={styles.result}>
             <img src={result} style={styles.image} />
 
             <div style={styles.overlay}>
               <button
-                style={{
-                  ...styles.unlockButton,
-                  opacity: hdUrl ? 1 : 0.5,
-                }}
-                onClick={handleDownload}
+                style={styles.unlockButton}
+                onClick={handleCheckout}
                 disabled={!hdUrl}
               >
-                Download HD
+                Scarica in HD — 0,30€
               </button>
             </div>
           </div>
@@ -235,7 +208,6 @@ const styles = {
     background: "#6c5cff",
     color: "white",
     width: "100%",
-    cursor: "pointer",
   },
   result: {
     marginTop: 30,
@@ -252,15 +224,12 @@ const styles = {
     justifyContent: "center",
     alignItems: "center",
     background: "rgba(0,0,0,0.4)",
-    borderRadius: 12,
   },
   unlockButton: {
     padding: 14,
     borderRadius: 10,
-    border: "none",
     background: "#00c853",
     color: "white",
     fontWeight: "bold",
-    cursor: "pointer",
   },
 };
