@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 export default function SuccessContent() {
   const params = useSearchParams();
 
-  // 🔥 decode URL correttamente
   const rawImage = params.get("image");
   const image = rawImage ? decodeURIComponent(rawImage) : null;
 
@@ -19,6 +18,8 @@ export default function SuccessContent() {
       return;
     }
 
+    let objectUrl: string | null = null;
+
     const loadImage = async () => {
       try {
         const res = await fetch(image);
@@ -28,14 +29,14 @@ export default function SuccessContent() {
         }
 
         const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
+        objectUrl = URL.createObjectURL(blob);
 
-        setImageUrl(url);
+        setImageUrl(objectUrl);
 
-        // 🔥 download automatico (safe)
+        // 🔥 download automatico
         setTimeout(() => {
           const a = document.createElement("a");
-          a.href = url;
+          a.href = objectUrl!;
           a.download = "filmface-hd.jpg";
           document.body.appendChild(a);
           a.click();
@@ -44,21 +45,22 @@ export default function SuccessContent() {
 
       } catch (err) {
         console.error("DOWNLOAD ERROR:", err);
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     };
 
     loadImage();
 
-    // cleanup memoria
+    // ✅ cleanup corretto (usa objectUrl locale)
     return () => {
-      if (imageUrl) URL.revokeObjectURL(imageUrl);
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
     };
 
   }, [image]);
 
-  // 🔴 errore: niente immagine
   if (!image) {
     return (
       <div style={styles.page}>
@@ -74,7 +76,7 @@ export default function SuccessContent() {
     <div style={styles.page}>
       <h1 style={styles.title}>Pagamento completato</h1>
 
-      {loading && <p>Caricamento immagine HD...</p>}
+      {loading && <p>Preparazione download...</p>}
 
       {imageUrl && (
         <>
