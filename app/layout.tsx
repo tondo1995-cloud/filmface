@@ -30,13 +30,30 @@ export default function RootLayout({
       className={`${inter.variable} ${grotesk.variable}`}
     >
       <body
-        style={{
-          fontFamily: "var(--font-inter)",
-          margin: 0,
-        }}
-      >
-        {children}
-      </body>
+  style={{
+    fontFamily: "var(--font-inter)",
+    margin: 0,
+  }}
+>
+  {/* Google Analytics */}
+  <script
+    async
+    src="https://www.googletagmanager.com/gtag/js?id=G-RCG961Z856"
+  ></script>
+
+  <script
+    dangerouslySetInnerHTML={{
+      __html: `
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-RCG961Z856');
+      `,
+    }}
+  />
+
+  {children}
+</body>
     </html>
   );
 }
