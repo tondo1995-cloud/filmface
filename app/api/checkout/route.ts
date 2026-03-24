@@ -45,7 +45,7 @@ export async function POST(req: Request) {
               name: "FilmFace HD Download",
               description: "Download immagine HD senza watermark",
             },
-            unit_amount: 299,
+            unit_amount: 1,
           },
           quantity: 1,
         },
