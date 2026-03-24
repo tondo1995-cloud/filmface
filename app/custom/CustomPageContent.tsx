@@ -9,6 +9,7 @@ export default function CustomContent() {
   const [hdUrl, setHdUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // preview volto
   useEffect(() => {
     if (!faceFile) return;
 
@@ -18,12 +19,14 @@ export default function CustomContent() {
     return () => URL.revokeObjectURL(url);
   }, [faceFile]);
 
+  // cleanup result
   useEffect(() => {
     return () => {
       if (result) URL.revokeObjectURL(result);
     };
   }, [result]);
 
+  // upload cloudinary
   const uploadToCloudinary = async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -49,9 +52,10 @@ export default function CustomContent() {
     return data.secure_url;
   };
 
+  // GENERATE
   const handleGenerate = async () => {
     if (!faceFile) {
-      alert("Carica una foto");
+      alert("CARICA UNA FOTO");
       return;
     }
 
@@ -94,13 +98,13 @@ export default function CustomContent() {
 
     } catch (err) {
       console.error(err);
-      alert("Errore generazione");
+      alert("ERRORE GENERAZIONE");
     }
 
     setLoading(false);
   };
 
-  // 🔥 PAGAMENTO (NON download diretto)
+  // CHECKOUT
   const handleCheckout = async () => {
     if (!hdUrl) return;
 
@@ -120,29 +124,47 @@ export default function CustomContent() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert("Errore pagamento");
+        alert("ERRORE PAGAMENTO");
       }
     } catch (err) {
       console.error(err);
-      alert("Errore pagamento");
+      alert("ERRORE PAGAMENTO");
     }
   };
 
   return (
     <div style={styles.page}>
       <div style={styles.container}>
-        <h1 style={styles.title}>Trasforma il tuo amico in un film</h1>
+        <h1 style={styles.title}>
+          METTI IL TUO AMICO IN UN FILM
+        </h1>
 
-        <img src="/posters/wolf-fumatore.jpg" style={styles.poster} />
-
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setFaceFile(e.target.files?.[0] || null)}
+        <img
+          src="/posters/wolf-fumatore.jpg"
+          style={styles.poster}
         />
 
-        {preview && <img src={preview} style={styles.preview} />}
+        {/* 🔥 UPLOAD BUTTON */}
+        <label style={styles.uploadButton}>
+          {faceFile
+            ? "VOLTO CARICATO ✅"
+            : "CARICA IL VOLTO DA INSERIRE"}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) =>
+              setFaceFile(e.target.files?.[0] || null)
+            }
+            style={{ display: "none" }}
+          />
+        </label>
 
+        {/* preview */}
+        {preview && (
+          <img src={preview} style={styles.preview} />
+        )}
+
+        {/* GENERATE */}
         <button
           style={{
             ...styles.button,
@@ -151,9 +173,12 @@ export default function CustomContent() {
           onClick={handleGenerate}
           disabled={loading}
         >
-          {loading ? "Generazione..." : "Crea la locandina"}
+          {loading
+            ? "GENERAZIONE..."
+            : "CREA ORA IL TUO MEME"}
         </button>
 
+        {/* RESULT */}
         {result && (
           <div style={styles.result}>
             <img src={result} style={styles.image} />
@@ -164,7 +189,7 @@ export default function CustomContent() {
                 onClick={handleCheckout}
                 disabled={!hdUrl}
               >
-                Scarica in HD — 0,30€
+                SCARICA IN HD — 0,30€
               </button>
             </div>
           </div>
@@ -182,41 +207,67 @@ const styles = {
     justifyContent: "center",
     alignItems: "center",
     color: "white",
+    fontFamily: "var(--font-inter)",
   },
+
   container: {
     width: 360,
     textAlign: "center" as const,
   },
+
   title: {
     marginBottom: 20,
+    fontFamily: "var(--font-grotesk)",
+    fontWeight: 700,
+    letterSpacing: -0.5,
   },
+
   poster: {
     width: "100%",
     borderRadius: 12,
     marginBottom: 20,
   },
+
+  uploadButton: {
+    display: "block",
+    width: "100%",
+    padding: 14,
+    borderRadius: 12,
+    background: "white",
+    color: "black",
+    fontWeight: 600,
+    cursor: "pointer",
+    marginBottom: 10,
+  },
+
   preview: {
     width: 100,
     marginTop: 10,
     borderRadius: 10,
   },
+
   button: {
     marginTop: 20,
     padding: 14,
     borderRadius: 12,
     border: "none",
-    background: "#6c5cff",
+    background: "linear-gradient(135deg, #6c5cff, #8a7dff)",
     color: "white",
     width: "100%",
+    cursor: "pointer",
+    fontWeight: 600,
   },
+
   result: {
     marginTop: 30,
     position: "relative" as const,
   },
+
   image: {
     width: "100%",
     borderRadius: 12,
   },
+
   overlay: {
     position: "absolute" as const,
     inset: 0,
@@ -224,12 +275,15 @@ const styles = {
     justifyContent: "center",
     alignItems: "center",
     background: "rgba(0,0,0,0.4)",
+    borderRadius: 12,
   },
+
   unlockButton: {
     padding: 14,
     borderRadius: 10,
     background: "#00c853",
     color: "white",
     fontWeight: "bold",
+    cursor: "pointer",
   },
 };
