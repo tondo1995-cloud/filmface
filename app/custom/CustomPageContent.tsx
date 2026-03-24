@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 
 export default function CustomContent() {
   const [faceFile, setFaceFile] = useState<File | null>(null);
-  const [name, setName] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [hdUrl, setHdUrl] = useState<string | null>(null);
@@ -53,15 +52,10 @@ export default function CustomContent() {
     return data.secure_url;
   };
 
-  // GENERATE
+  // GENERATE (SOLO FACE SWAP)
   const handleGenerate = async () => {
     if (!faceFile) {
       alert("Inserisci un'immagine");
-      return;
-    }
-
-    if (!name.trim()) {
-      alert("Inserisci nome e cognome");
       return;
     }
 
@@ -82,7 +76,6 @@ export default function CustomContent() {
         body: JSON.stringify({
           sourceImageUrl: faceUrl,
           targetImageUrl: fullPosterUrl,
-          name: name.trim(),
         }),
       });
 
@@ -92,12 +85,12 @@ export default function CustomContent() {
         throw new Error(text);
       }
 
-      // PREVIEW
+      // preview (watermark)
       const blob = await res.blob();
       const previewUrl = URL.createObjectURL(blob);
       setResult(previewUrl);
 
-      // ✅ HD URL (CORRETTO)
+      // HD url
       const hd = res.headers.get("x-hd-url");
 
       if (hd) {
@@ -114,7 +107,7 @@ export default function CustomContent() {
     setLoading(false);
   };
 
-  // DOWNLOAD
+  // DOWNLOAD HD
   const handleDownload = async () => {
     if (!hdUrl) return;
 
@@ -136,13 +129,15 @@ export default function CustomContent() {
   return (
     <div style={styles.page}>
       <div style={styles.container}>
-        <h1 style={styles.title}>Create your poster</h1>
+        <h1 style={styles.title}>Put your friend in the movie</h1>
 
+        {/* poster base */}
         <img
           src="/posters/wolf-fumatore.jpg"
           style={styles.poster}
         />
 
+        {/* upload */}
         <input
           type="file"
           accept="image/*"
@@ -151,18 +146,12 @@ export default function CustomContent() {
           }
         />
 
-        <input
-          type="text"
-          placeholder="Nome e cognome"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          style={styles.input}
-        />
-
+        {/* preview volto */}
         {preview && (
           <img src={preview} style={styles.preview} />
         )}
 
+        {/* generate */}
         <button
           style={{
             ...styles.button,
@@ -174,6 +163,7 @@ export default function CustomContent() {
           {loading ? "Generating..." : "Generate"}
         </button>
 
+        {/* risultato */}
         {result && (
           <div style={styles.result}>
             <img src={result} style={styles.image} />
@@ -217,15 +207,6 @@ const styles = {
     width: "100%",
     borderRadius: 12,
     marginBottom: 20,
-  },
-  input: {
-    marginTop: 10,
-    padding: 12,
-    borderRadius: 10,
-    border: "none",
-    background: "#1a1a22",
-    color: "white",
-    width: "100%",
   },
   preview: {
     width: 100,
