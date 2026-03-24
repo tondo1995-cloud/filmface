@@ -9,7 +9,6 @@ export default function CustomContent() {
   const [hdUrl, setHdUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // preview volto
   useEffect(() => {
     if (!faceFile) return;
 
@@ -19,14 +18,12 @@ export default function CustomContent() {
     return () => URL.revokeObjectURL(url);
   }, [faceFile]);
 
-  // cleanup result
   useEffect(() => {
     return () => {
       if (result) URL.revokeObjectURL(result);
     };
   }, [result]);
 
-  // upload cloudinary
   const uploadToCloudinary = async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -52,7 +49,6 @@ export default function CustomContent() {
     return data.secure_url;
   };
 
-  // GENERATE
   const handleGenerate = async () => {
     if (!faceFile) {
       alert("CARICA UNA FOTO");
@@ -104,7 +100,6 @@ export default function CustomContent() {
     setLoading(false);
   };
 
-  // CHECKOUT
   const handleCheckout = async () => {
     if (!hdUrl) return;
 
@@ -159,6 +154,13 @@ export default function CustomContent() {
           />
         </label>
 
+        {/* 🔥 NOME FILE */}
+        <p style={styles.fileName}>
+          {faceFile
+            ? faceFile.name
+            : "Nessuna immagine caricata"}
+        </p>
+
         {/* preview */}
         {preview && (
           <img src={preview} style={styles.preview} />
@@ -189,7 +191,7 @@ export default function CustomContent() {
                 onClick={handleCheckout}
                 disabled={!hdUrl}
               >
-                SCARICA IN HD — 0,30€
+                SCARICA IN HD — 0,50€
               </button>
             </div>
           </div>
@@ -237,7 +239,12 @@ const styles = {
     color: "black",
     fontWeight: 600,
     cursor: "pointer",
-    marginBottom: 10,
+  },
+
+  fileName: {
+    marginTop: 8,
+    fontSize: 13,
+    opacity: 0.6,
   },
 
   preview: {

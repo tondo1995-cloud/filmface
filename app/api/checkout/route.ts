@@ -33,7 +33,7 @@ export async function POST(req: Request) {
             product_data: {
               name: "Download locandina HD",
             },
-            unit_amount: 30, // 0.30€
+            unit_amount: 50, // 0.50€
           },
           quantity: 1,
         },
