@@ -14,15 +14,15 @@ export default function Home() {
 
   return (
     <div style={styles.page}>
-      {/* 🔥 HOOK */}
+      {/* HOOK */}
       <p style={styles.hook}>
         😂 Il regalo più stupido (e perfetto) di sempre
       </p>
 
-      {/* 🔥 BRAND */}
+      {/* BRAND */}
       <h1 style={styles.title}>FilmFace</h1>
 
-      {/* 🔥 VALUE PROP */}
+      {/* VALUE */}
       <p style={styles.subtitle}>
         Metti la faccia del tuo amico in un film in 5 secondi
       </p>
@@ -55,17 +55,20 @@ const styles = {
     padding: 40,
     textAlign: "center" as const,
     color: "white",
+    fontFamily: "var(--font-inter)",
   },
 
   hook: {
     fontSize: 14,
-    opacity: 0.7,
+    opacity: 0.6,
     marginBottom: 10,
   },
 
   title: {
-    fontSize: 36,
-    fontWeight: "bold",
+    fontSize: 42,
+    fontWeight: 700,
+    fontFamily: "var(--font-grotesk)",
+    letterSpacing: -0.5,
   },
 
   subtitle: {
@@ -84,23 +87,25 @@ const styles = {
   card: {
     background: "#1a1a1a",
     padding: 10,
-    borderRadius: 12,
+    borderRadius: 14,
+    transition: "transform 0.2s ease, box-shadow 0.2s ease",
   },
 
   image: {
     width: "100%",
-    borderRadius: 8,
+    borderRadius: 10,
   },
 
   button: {
-    marginTop: 10,
+    marginTop: 12,
     width: "100%",
     padding: 12,
     borderRadius: 10,
     border: "none",
-    background: "#6c5cff",
+    background: "linear-gradient(135deg, #6c5cff, #8a7dff)",
     color: "white",
     cursor: "pointer",
-    fontWeight: "bold",
+    fontWeight: 600,
+    fontSize: 14,
   },
 };
