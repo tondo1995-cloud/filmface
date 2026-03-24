@@ -109,22 +109,36 @@ export default function CustomContent() {
 
   // DOWNLOAD HD
   const handleDownload = async () => {
-    if (!hdUrl) return;
+  if (!hdUrl) {
+    alert("Immagine non disponibile");
+    return;
+  }
 
-    try {
-      const res = await fetch(hdUrl);
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
+  try {
+    const res = await fetch("/api/checkout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        imageUrl: hdUrl,
+      }),
+    });
 
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "filmface-hd.jpg";
-      a.click();
-    } catch (err) {
-      console.error(err);
-      alert("Errore download");
+    const data = await res.json();
+
+    if (data.url) {
+      window.location.href = data.url; // 🔥 redirect a Stripe
+    } else {
+      console.error(data);
+      alert("Errore pagamento");
     }
-  };
+
+  } catch (err) {
+    console.error(err);
+    alert("Errore pagamento");
+  }
+};
 
   return (
     <div style={styles.page}>
