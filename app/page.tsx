@@ -2,13 +2,9 @@
 
 import { useRouter } from "next/navigation";
 
+// ✅ SOLO LOCANDINE 2,5,6
 const posters = [
-  "/posters/dallas.jpg",
   "/posters/wolf-fumatore.jpg",
-  "/posters/wanted.jpg",
-  "/posters/netflix.jpg",
-
-  // NUOVE LOCANDINE
   "/posters/scusateilritardo-troisi.jpg",
   "/posters/scusateilritardo-woman.jpg",
 ];
@@ -82,17 +78,21 @@ const styles: any = {
     fontSize: 16,
   },
 
+  // 🔥 GRID CONTROLLATA
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-    gap: 20,
+    gridTemplateColumns: "repeat(4, 220px)", // max 4 per riga
+    justifyContent: "space-between", // distribuite su tutta larghezza
+    rowGap: 30,
+    width: "100%",
+    maxWidth: 1000,
+    margin: "0 auto",
   },
 
   card: {
     background: "#1a1a1a",
     padding: 10,
     borderRadius: 14,
-    transition: "transform 0.2s ease, box-shadow 0.2s ease",
   },
 
   image: {
