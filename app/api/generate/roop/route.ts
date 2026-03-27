@@ -3,37 +3,45 @@ import sharp from "sharp";
 
 export const runtime = "nodejs";
 
-// ✅ ESTRAZIONE URL ROBUSTA
-function extractReplicateUrl(output: any): string | null {
+// ✅ PARSING ULTRA ROBUSTO
+async function getImageUrl(output: any): Promise<string | null> {
   if (!output) return null;
 
+  // 🔹 stringa diretta
   if (typeof output === "string") return output;
 
+  // 🔹 array
   if (Array.isArray(output)) {
-    const first = output[0];
-
-    if (typeof first === "string") return first;
-
-    if (first?.url && typeof first.url === "string") {
-      return first.url;
-    }
-
-    if (first?.toString) {
-      const str = first.toString();
-      if (str.startsWith("http")) return str;
-    }
+    return await getImageUrl(output[0]);
   }
 
-  if (output?.url && typeof output.url === "string") {
-    return output.url;
+  // 🔹 oggetto con url
+  if (output.url) return output.url;
+
+  // 🔹 file/blob/stream → converti a buffer e crea URL temporanea
+  if (output instanceof ReadableStream) {
+    const reader = output.getReader();
+    const chunks = [];
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+    }
+
+    const buffer = Buffer.concat(chunks);
+
+    // 👉 qui NON puoi creare URL pubblico → fallback errore chiaro
+    throw new Error("ROOP ha restituito uno stream, serve hosting intermedio");
   }
 
-  if (output?.toString) {
+  // 🔹 fallback toString
+  if (output.toString) {
     const str = output.toString();
     if (str.startsWith("http")) return str;
   }
 
-  console.error("❌ OUTPUT NON PARSABILE:", output);
+  console.error("❌ OUTPUT NON GESTITO:", output);
   return null;
 }
 
@@ -54,10 +62,6 @@ async function applyWatermark(imageUrl: string): Promise<Buffer> {
   const image = sharp(imageBuffer);
   const metadata = await image.metadata();
 
-  if (!metadata.width || !metadata.height) {
-    throw new Error("Dimensioni immagine non valide");
-  }
-
   const resizedWatermark = await sharp(watermarkBuffer)
     .resize(metadata.width, metadata.height)
     .png()
@@ -69,21 +73,12 @@ async function applyWatermark(imageUrl: string): Promise<Buffer> {
     .toBuffer();
 }
 
-// ⏱️ TIMEOUT UTILE (evita blocchi)
-async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  const timeout = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error("Timeout Replicate")), ms)
-  );
-  return Promise.race([promise, timeout]);
-}
-
 // 🚀 MAIN
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { sourceImageUrl, targetImageUrl } = body;
 
-    // ✅ VALIDAZIONE
     if (
       !sourceImageUrl ||
       !targetImageUrl ||
@@ -103,32 +98,31 @@ export async function POST(req: Request) {
     console.log("SOURCE:", sourceImageUrl);
     console.log("TARGET:", targetImageUrl);
 
-    // 🔥 FACE SWAP + TIMEOUT
-const roopOutput = await replicate.run(
-  "okaris/roop:8c1e100ecabb3151cf1e6c62879b6de7a4b84602de464ed249b6cff0b86211d8",
-  {
-    input: {
-      source: sourceImageUrl,
-      target: targetImageUrl,
-    },
-  }
-);
+    // 🔥 ROOP
+    const roopOutput = await replicate.run(
+      "okaris/roop:8c1e100ecabb3151cf1e6c62879b6de7a4b84602de464ed249b6cff0b86211d8",
+      {
+        input: {
+          source: sourceImageUrl,
+          target: targetImageUrl,
+        },
+      }
+    );
 
     console.log("RAW ROOP OUTPUT:", roopOutput);
 
-    const roopImageUrl = extractReplicateUrl(roopOutput);
+    const roopImageUrl = await getImageUrl(roopOutput);
 
     if (!roopImageUrl) {
-      throw new Error("ROOP URL NON TROVATA");
+      throw new Error("ROOP URL NON TROVATA (formato output non supportato)");
     }
 
     console.log("✅ ROOP OK:", roopImageUrl);
 
-    // 🔥 PREVIEW con watermark
+    // 🔥 WATERMARK
     const previewBuffer = await applyWatermark(roopImageUrl);
-    const responseBody = new Uint8Array(previewBuffer);
 
-    return new Response(responseBody, {
+    return new Response(new Uint8Array(previewBuffer), {
       headers: {
         "Content-Type": "image/jpeg",
         "Cache-Control": "no-store",
