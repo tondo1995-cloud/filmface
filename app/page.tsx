@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 
 // ✅ SOLO LOCANDINE 2,5,6
 const posters = [
-  "/posters/wolf-fumatore.jpg",
+  "/posters/wolf-dottore-del-b.jpg",
   "/posters/scusateilritardo-troisi.jpg",
   "/posters/scusateilritardo-woman.jpg",
 ];
