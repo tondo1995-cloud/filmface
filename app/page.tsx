@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useRef, useEffect, useState } from "react";
 
 const posters = [
   {
@@ -37,29 +38,72 @@ export default function Home() {
 
       <div style={styles.grid}>
         {posters.map((p, i) => (
-          <div key={i} style={styles.block}>
-            
-            <div style={styles.row}>
-              <img src={p.source} style={styles.posterLeft} />
-              <img src={p.example} style={styles.posterRight} />
-
-              <img
-                src="/symbols/green-arrow.png"
-                style={styles.arrowOverlay}
-              />
-            </div>
-
-            <button
-              style={styles.button}
-              onClick={() =>
-                router.push(`/custom?poster=${encodeURIComponent(p.target)}`)
-              }
-            >
-              Crea
-            </button>
-          </div>
+          <PosterBlock key={i} p={p} router={router} />
         ))}
       </div>
+    </div>
+  );
+}
+
+function PosterBlock({ p, router }: any) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  const rightRef = useRef<HTMLImageElement>(null);
+  const arrowRef = useRef<HTMLImageElement>(null);
+
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const update = () => {
+      if (!rowRef.current || !rightRef.current || !arrowRef.current) return;
+
+      const row = rowRef.current.getBoundingClientRect();
+      const right = rightRef.current.getBoundingClientRect();
+
+      const arrowWidth = arrowRef.current.offsetWidth;
+      const arrowHeight = arrowRef.current.offsetHeight;
+
+      // 👉 bordo sinistro poster destro
+      const targetX = right.left - row.left;
+
+      // 👉 centro verticale poster destro
+      const targetY = right.top - row.top + right.height / 2;
+
+      setPos({
+        x: targetX - arrowWidth / 2,
+        y: targetY - arrowHeight / 2,
+      });
+    };
+
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  return (
+    <div style={styles.block}>
+      <div style={styles.row} ref={rowRef}>
+        <img src={p.source} style={styles.posterLeft} />
+        <img src={p.example} style={styles.posterRight} ref={rightRef} />
+
+        <img
+          ref={arrowRef}
+          src="/symbols/green-arrow.png"
+          style={{
+            ...styles.arrowOverlay,
+            left: pos.x,
+            top: pos.y,
+          }}
+        />
+      </div>
+
+      <button
+        style={styles.button}
+        onClick={() =>
+          router.push(`/custom?poster=${encodeURIComponent(p.target)}`)
+        }
+      >
+        Crea
+      </button>
     </div>
   );
 }
@@ -118,7 +162,6 @@ const styles: any = {
     width: 150,
     borderRadius: 0,
     zIndex: 1,
-    display: "block",
   },
 
   posterRight: {
@@ -126,19 +169,11 @@ const styles: any = {
     borderRadius: 0,
     marginLeft: -35,
     zIndex: 2,
-    display: "block",
   },
 
-  // ✅ FRECCIA FINALMENTE CORRETTA
   arrowOverlay: {
     position: "absolute",
     width: 80,
-
-    // 👇 bordo sinistro del poster grande = centro + metà + overlap
-    left: "calc(50% - 115px + -35px)",
-
-    top: "50%",
-    transform: "translate(-50%, -50%)",
     pointerEvents: "none",
     zIndex: 3,
   },
