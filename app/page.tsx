@@ -3,17 +3,28 @@
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
-// ✅ SOLO LOCANDINE
+// 🔥 STRUTTURA CORRETTA
 const posters = [
-  "/posters/wolf-dottore-del-b.jpg",
-  "/posters/scusateilritardo-troisi.jpg",
-  "/posters/scusateilritardo-woman.jpg",
+  {
+    source: "/posters/wolf-source.jpg",
+    example: "/examples/wolf-example.jpg",
+    target: "/posters/wolf-dottore-del-b.jpg",
+  },
+  {
+    source: "/posters/scusateilritardo-troisi-source.jpg",
+    example: "/examples/scusateilritardo-troisi-example.jpg",
+    target: "/posters/scusateilritardo-troisi.jpg",
+  },
+  {
+    source: "/posters/scusateilritardo-woman-source.jpg",
+    example: "/examples/scusateilritardo-woman-example.jpg",
+    target: "/posters/scusateilritardo-woman.jpg",
+  },
 ];
 
 export default function Home() {
   const router = useRouter();
 
-  // 🔥 MOBILE DETECTION
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -25,42 +36,51 @@ export default function Home() {
 
   return (
     <div style={styles.page}>
-      {/* HOOK */}
       <p style={styles.hook}>
         😂 Il regalo più stupido (e perfetto) di sempre
       </p>
 
-      {/* BRAND */}
       <h1 style={styles.title}>FilmFace</h1>
 
-      {/* VALUE */}
       <p style={styles.subtitle}>
         Metti la faccia del tuo amico in un film in 5 secondi
       </p>
 
-      {/* GRID */}
-      <div
-  style={{
-    ...styles.grid,
-    gridTemplateColumns: isMobile
-      ? "auto"
-      : "repeat(4, 220px)",
-    justifyContent: isMobile
-      ? "center"
-      : "space-between",
-  }}
->
-        {posters.map((poster, i) => (
-          <div key={i} style={styles.card}>
-            <img src={poster} style={styles.image} />
+      <div style={styles.list}>
+        {posters.map((p, i) => (
+          <div key={i} style={styles.block}>
+            
+            {/* 🔥 PRIMA / DOPO */}
+            <div
+              style={{
+                ...styles.row,
+                flexDirection: isMobile ? "column" : "row",
+              }}
+            >
+              <img src={p.source} style={styles.poster} />
 
+              {/* FRECCIA */}
+              <img
+                src="/symbols/green-arrow.png"
+                style={{
+                  ...styles.arrow,
+                  transform: isMobile
+                    ? "rotate(90deg)"
+                    : "none",
+                }}
+              />
+
+              <img src={p.example} style={styles.poster} />
+            </div>
+
+            {/* CTA */}
             <button
               style={styles.button}
               onClick={() =>
-                router.push(`/custom?poster=${encodeURIComponent(poster)}`)
+                router.push(`/custom?poster=${encodeURIComponent(p.target)}`)
               }
             >
-              Crea immagine
+              Crea
             </button>
           </div>
         ))}
@@ -89,46 +109,55 @@ const styles: any = {
     fontSize: 42,
     fontWeight: 700,
     fontFamily: "var(--font-grotesk)",
-    letterSpacing: -0.5,
   },
 
   subtitle: {
     color: "#aaa",
-    marginBottom: 30,
+    marginBottom: 40,
     marginTop: 10,
-    fontSize: 16,
   },
 
-  grid: {
-    display: "grid",
-    gap: 30,
-    width: "100%",
-    maxWidth: 1000,
-    margin: "0 auto",
+  list: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 60,
+    alignItems: "center",
   },
 
-  card: {
-    width: 220, // 🔥 fondamentale per mobile centrato
+  block: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 20,
+  },
+
+  row: {
+    display: "flex",
+    alignItems: "center",
+    gap: 20,
+    position: "relative",
+  },
+
+  poster: {
+    width: 220,
+    borderRadius: 12,
     background: "#1a1a1a",
     padding: 10,
-    borderRadius: 14,
   },
 
-  image: {
-    width: "100%",
-    borderRadius: 10,
+  arrow: {
+    width: 80,
+    height: "auto",
   },
 
   button: {
-    marginTop: 12,
-    width: "100%",
-    padding: 12,
-    borderRadius: 10,
+    padding: "14px 40px",
+    borderRadius: 12,
     border: "none",
     background: "linear-gradient(135deg, #6c5cff, #8a7dff)",
     color: "white",
     cursor: "pointer",
     fontWeight: 600,
-    fontSize: 14,
+    fontSize: 16,
   },
 };
