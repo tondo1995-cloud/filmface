@@ -62,10 +62,7 @@ function PosterBlock({ p, router }: any) {
       const arrowWidth = arrowRef.current.offsetWidth;
       const arrowHeight = arrowRef.current.offsetHeight;
 
-      // bordo sinistro poster destro
       const targetX = right.left - row.left;
-
-      // centro verticale poster destro
       const targetY = right.top - row.top + right.height / 2;
 
       setPos({
@@ -74,7 +71,6 @@ function PosterBlock({ p, router }: any) {
       });
     };
 
-    // 👉 aspetta render immagini
     const timeout = setTimeout(update, 50);
 
     window.addEventListener("resize", update);
@@ -112,7 +108,7 @@ function PosterBlock({ p, router }: any) {
           router.push(`/custom?poster=${encodeURIComponent(p.target)}`)
         }
       >
-        Crea
+        PERSONALIZZA ORA GRATIS
       </button>
     </div>
   );
@@ -146,7 +142,6 @@ const styles: any = {
     marginTop: 10,
   },
 
-  // 🔥 DESKTOP 3 PER RIGA, MOBILE AUTO
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
@@ -169,24 +164,25 @@ const styles: any = {
     justifyContent: "center",
   },
 
-  // 🔥 SINISTRA (più piccola)
+  // 🔥 SINISTRA
   posterLeft: {
     width: 150,
     borderRadius: 0,
     zIndex: 1,
     objectFit: "cover",
+    boxShadow: "0 10px 25px rgba(0,0,0,0.6)", // 👈 ombra leggera
   },
 
-  // 🔥 DESTRA (focus + overlap leggero)
+  // 🔥 DESTRA (focus)
   posterRight: {
     width: 230,
     borderRadius: 0,
-    marginLeft: -25, // 👈 meno overlap rispetto a prima
+    marginLeft: -25,
     zIndex: 2,
     objectFit: "cover",
+    boxShadow: "0 20px 40px rgba(0,0,0,0.7)", // 👈 più profonda
   },
 
-  // 🔥 FRECCIA PERFETTA
   arrowOverlay: {
     position: "absolute",
     width: 80,
@@ -195,13 +191,14 @@ const styles: any = {
   },
 
   button: {
-    padding: "14px 40px",
-    borderRadius: 12,
+    padding: "16px 42px",
+    borderRadius: 14,
     border: "none",
     background: "linear-gradient(135deg, #6c5cff, #8a7dff)",
     color: "white",
     cursor: "pointer",
-    fontWeight: 600,
-    fontSize: 16,
+    fontWeight: 700,
+    fontSize: 15,
+    letterSpacing: 0.5,
   },
 };
