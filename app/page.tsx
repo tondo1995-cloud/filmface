@@ -3,21 +3,21 @@
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
-// 🔥 STRUTTURA CORRETTA
+// 🔥 USIAMO SOLO FILE CHE ESISTONO
 const posters = [
   {
-    source: "/posters/wolf-source.jpg",
-    example: "/examples/wolf-example.jpg",
+    source: "/posters/wolf-dottore-del-b.jpg",
+    example: "/examples/wolf-dottore-del-b-example.jpg",
     target: "/posters/wolf-dottore-del-b.jpg",
   },
   {
-    source: "/posters/scusateilritardo-troisi-source.jpg",
-    example: "/examples/scusateilritardo-troisi-example.jpg",
+    source: "/posters/scusateilritardo-troisi.jpg",
+    example: "/posters/scusateilritardo-troisi.jpg", // temporaneo
     target: "/posters/scusateilritardo-troisi.jpg",
   },
   {
-    source: "/posters/scusateilritardo-woman-source.jpg",
-    example: "/examples/scusateilritardo-woman-example.jpg",
+    source: "/posters/scusateilritardo-woman.jpg",
+    example: "/posters/scusateilritardo-woman.jpg", // temporaneo
     target: "/posters/scusateilritardo-woman.jpg",
   },
 ];
@@ -50,7 +50,6 @@ export default function Home() {
         {posters.map((p, i) => (
           <div key={i} style={styles.block}>
             
-            {/* 🔥 PRIMA / DOPO */}
             <div
               style={{
                 ...styles.row,
@@ -59,21 +58,17 @@ export default function Home() {
             >
               <img src={p.source} style={styles.poster} />
 
-              {/* FRECCIA */}
               <img
                 src="/symbols/green-arrow.png"
                 style={{
                   ...styles.arrow,
-                  transform: isMobile
-                    ? "rotate(90deg)"
-                    : "none",
+                  transform: isMobile ? "rotate(90deg)" : "none",
                 }}
               />
 
               <img src={p.example} style={styles.poster} />
             </div>
 
-            {/* CTA */}
             <button
               style={styles.button}
               onClick={() =>
@@ -135,7 +130,6 @@ const styles: any = {
     display: "flex",
     alignItems: "center",
     gap: 20,
-    position: "relative",
   },
 
   poster: {
@@ -147,7 +141,6 @@ const styles: any = {
 
   arrow: {
     width: 80,
-    height: "auto",
   },
 
   button: {
