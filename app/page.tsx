@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 
-// 🔥 USIAMO SOLO FILE CHE ESISTONO
 const posters = [
   {
     source: "/posters/wolf-dottore-del-b.jpg",
@@ -40,19 +39,18 @@ export default function Home() {
         {posters.map((p, i) => (
           <div key={i} style={styles.block}>
             
-            {/* 🔥 PRIMA / DOPO */}
+            {/* PRIMA / DOPO */}
             <div style={styles.row}>
               <img src={p.source} style={styles.posterLeft} />
               <img src={p.example} style={styles.posterRight} />
 
-              {/* 🔥 FRECCIA OVERLAY */}
+              {/* FRECCIA */}
               <img
                 src="/symbols/green-arrow.png"
                 style={styles.arrowOverlay}
               />
             </div>
 
-            {/* CTA */}
             <button
               style={styles.button}
               onClick={() =>
@@ -110,7 +108,6 @@ const styles: any = {
     gap: 20,
   },
 
-  // 🔥 BASE LAYOUT
   row: {
     position: "relative",
     display: "flex",
@@ -118,33 +115,30 @@ const styles: any = {
     justifyContent: "center",
   },
 
-  // 🔥 SINISTRA (più piccola, sotto)
+  // 🔥 SINISTRA (70%)
   posterLeft: {
     width: 150,
     borderRadius: 12,
-    background: "#1a1a1a",
-    padding: 10,
     zIndex: 1,
+    display: "block",
   },
 
-  // 🔥 DESTRA (più grande, sopra + overlap)
+  // 🔥 DESTRA (OVERLAP + FOCUS)
   posterRight: {
     width: 240,
     borderRadius: 12,
-    background: "#1a1a1a",
-    padding: 10,
-    marginLeft: -50, // 🔥 overlap reale
+    marginLeft: -60, // overlap più deciso
     zIndex: 2,
-    boxShadow: "none",
+    display: "block",
   },
 
-  // 🔥 FRECCIA SOPRA TUTTO
+  // 🔥 FRECCIA OVERLAY PERFETTA
   arrowOverlay: {
     position: "absolute",
-    width: 100,
+    width: 90,
     left: "50%",
     top: "50%",
-    transform: "translate(-30%, -50%)",
+    transform: "translate(-20%, -50%)",
     pointerEvents: "none",
     zIndex: 3,
   },
