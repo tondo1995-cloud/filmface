@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
 
 // 🔥 USIAMO SOLO FILE CHE ESISTONO
 const posters = [
@@ -12,27 +11,18 @@ const posters = [
   },
   {
     source: "/posters/scusateilritardo-troisi.jpg",
-    example: "/posters/scusateilritardo-troisi.jpg", // temporaneo
+    example: "/posters/scusateilritardo-troisi.jpg",
     target: "/posters/scusateilritardo-troisi.jpg",
   },
   {
     source: "/posters/scusateilritardo-woman.jpg",
-    example: "/posters/scusateilritardo-woman.jpg", // temporaneo
+    example: "/posters/scusateilritardo-woman.jpg",
     target: "/posters/scusateilritardo-woman.jpg",
   },
 ];
 
 export default function Home() {
   const router = useRouter();
-
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
 
   return (
     <div style={styles.page}>
@@ -50,25 +40,19 @@ export default function Home() {
         {posters.map((p, i) => (
           <div key={i} style={styles.block}>
             
-            <div
-              style={{
-                ...styles.row,
-                flexDirection: isMobile ? "column" : "row",
-              }}
-            >
+            {/* 🔥 PRIMA / DOPO */}
+            <div style={styles.row}>
               <img src={p.source} style={styles.poster} />
+              <img src={p.example} style={styles.poster} />
 
+              {/* 🔥 FRECCIA OVERLAY */}
               <img
                 src="/symbols/green-arrow.png"
-                style={{
-                  ...styles.arrow,
-                  transform: isMobile ? "rotate(90deg)" : "none",
-                }}
+                style={styles.arrowOverlay}
               />
-
-              <img src={p.example} style={styles.poster} />
             </div>
 
+            {/* CTA */}
             <button
               style={styles.button}
               onClick={() =>
@@ -126,10 +110,13 @@ const styles: any = {
     gap: 20,
   },
 
+  // 🔥 IMMAGINI ATTACCATE + OVERLAY
   row: {
+    position: "relative",
     display: "flex",
+    justifyContent: "center",
     alignItems: "center",
-    gap: 20,
+    gap: 0, // 🔥 fondamentale
   },
 
   poster: {
@@ -139,8 +126,14 @@ const styles: any = {
     padding: 10,
   },
 
-  arrow: {
-    width: 80,
+  // 🔥 FRECCIA SOPRA LE IMMAGINI
+  arrowOverlay: {
+    position: "absolute",
+    width: 100,
+    left: "50%",
+    top: "50%",
+    transform: "translate(-50%, -50%)",
+    pointerEvents: "none",
   },
 
   button: {
