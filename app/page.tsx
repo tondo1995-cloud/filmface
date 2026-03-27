@@ -35,7 +35,6 @@ export default function Home() {
         Metti la faccia del tuo amico in un film in 5 secondi
       </p>
 
-      {/* GRID RESPONSIVE */}
       <div style={styles.grid}>
         {posters.map((p, i) => (
           <div key={i} style={styles.block}>
@@ -93,7 +92,6 @@ const styles: any = {
     marginTop: 10,
   },
 
-  // 🔥 GRID: 3 desktop / 1 mobile automatico
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
@@ -116,30 +114,34 @@ const styles: any = {
     justifyContent: "center",
   },
 
-  // 🔥 SINISTRA (più piccola)
+  // 🔥 SINISTRA (70%)
   posterLeft: {
     width: 150,
-    borderRadius: 12,
+    borderRadius: 0, // ✅ angoli retti
     zIndex: 1,
     display: "block",
   },
 
-  // 🔥 DESTRA (FOCUS, meno overlap)
+  // 🔥 DESTRA (FOCUS)
   posterRight: {
     width: 230,
-    borderRadius: 12,
-    marginLeft: -35, // 👈 PRIMA -60 → ORA molto più pulito
+    borderRadius: 0, // ✅ angoli retti
+    marginLeft: -35,
     zIndex: 2,
     display: "block",
   },
 
-  // 🔥 FRECCIA
+  // 🔥 FRECCIA PERFETTAMENTE ALLINEATA AL BORDO
   arrowOverlay: {
     position: "absolute",
     width: 80,
-    left: "50%",
+
+    // 👉 questo è il punto chiave:
+    left: "calc(50% - 115px)", 
+    // 115px ≈ metà width posterRight (230 / 2)
+
     top: "50%",
-    transform: "translate(-20%, -50%)",
+    transform: "translate(-50%, -50%)",
     pointerEvents: "none",
     zIndex: 3,
   },
