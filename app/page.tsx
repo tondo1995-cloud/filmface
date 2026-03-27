@@ -42,8 +42,8 @@ export default function Home() {
             
             {/* 🔥 PRIMA / DOPO */}
             <div style={styles.row}>
-              <img src={p.source} style={styles.poster} />
-              <img src={p.example} style={styles.poster} />
+              <img src={p.source} style={styles.posterSmall} />
+              <img src={p.example} style={styles.posterBig} />
 
               {/* 🔥 FRECCIA OVERLAY */}
               <img
@@ -110,29 +110,38 @@ const styles: any = {
     gap: 20,
   },
 
-  // 🔥 IMMAGINI ATTACCATE + OVERLAY
+  // 🔥 IMMAGINI ATTACCATE
   row: {
     position: "relative",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    gap: 0, // 🔥 fondamentale
+    gap: 0,
   },
 
-  poster: {
+  // 🔥 SINISTRA (70%)
+  posterSmall: {
+    width: 160,
+    borderRadius: 12,
+    background: "#1a1a1a",
+    padding: 10,
+  },
+
+  // 🔥 DESTRA (FOCUS)
+  posterBig: {
     width: 220,
     borderRadius: 12,
     background: "#1a1a1a",
     padding: 10,
   },
 
-  // 🔥 FRECCIA SOPRA LE IMMAGINI
+  // 🔥 FRECCIA CENTRATA MA LEGGERMENTE VERSO OUTPUT
   arrowOverlay: {
     position: "absolute",
     width: 100,
     left: "50%",
     top: "50%",
-    transform: "translate(-50%, -50%)",
+    transform: "translate(-40%, -50%)",
     pointerEvents: "none",
   },
 
