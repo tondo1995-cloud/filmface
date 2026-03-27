@@ -42,8 +42,8 @@ export default function Home() {
             
             {/* 🔥 PRIMA / DOPO */}
             <div style={styles.row}>
-              <img src={p.source} style={styles.posterSmall} />
-              <img src={p.example} style={styles.posterBig} />
+              <img src={p.source} style={styles.posterLeft} />
+              <img src={p.example} style={styles.posterRight} />
 
               {/* 🔥 FRECCIA OVERLAY */}
               <img
@@ -99,7 +99,7 @@ const styles: any = {
   list: {
     display: "flex",
     flexDirection: "column",
-    gap: 60,
+    gap: 70,
     alignItems: "center",
   },
 
@@ -110,39 +110,43 @@ const styles: any = {
     gap: 20,
   },
 
-  // 🔥 IMMAGINI ATTACCATE
+  // 🔥 BASE LAYOUT
   row: {
     position: "relative",
     display: "flex",
-    justifyContent: "center",
     alignItems: "center",
-    gap: 0,
+    justifyContent: "center",
   },
 
-  // 🔥 SINISTRA (70%)
-  posterSmall: {
-    width: 160,
+  // 🔥 SINISTRA (più piccola, sotto)
+  posterLeft: {
+    width: 150,
     borderRadius: 12,
     background: "#1a1a1a",
     padding: 10,
+    zIndex: 1,
   },
 
-  // 🔥 DESTRA (FOCUS)
-  posterBig: {
-    width: 220,
+  // 🔥 DESTRA (più grande, sopra + overlap)
+  posterRight: {
+    width: 240,
     borderRadius: 12,
     background: "#1a1a1a",
     padding: 10,
+    marginLeft: -50, // 🔥 overlap reale
+    zIndex: 2,
+    boxShadow: "0 15px 40px rgba(0,0,0,0.6)",
   },
 
-  // 🔥 FRECCIA CENTRATA MA LEGGERMENTE VERSO OUTPUT
+  // 🔥 FRECCIA SOPRA TUTTO
   arrowOverlay: {
     position: "absolute",
     width: 100,
     left: "50%",
     top: "50%",
-    transform: "translate(-40%, -50%)",
+    transform: "translate(-30%, -50%)",
     pointerEvents: "none",
+    zIndex: 3,
   },
 
   button: {
