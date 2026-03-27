@@ -11,12 +11,12 @@ const posters = [
   },
   {
     source: "/posters/scusateilritardo-troisi.jpg",
-    example: "/posters/scusateilritardo-troisi.jpg",
+    example: "/posters/scusateilritardo-troisi-example.jpg",
     target: "/posters/scusateilritardo-troisi.jpg",
   },
   {
     source: "/posters/scusateilritardo-woman.jpg",
-    example: "/posters/scusateilritardo-woman.jpg",
+    example: "/posters/scusateilritardo-woman-example.jpg",
     target: "/posters/scusateilritardo-woman.jpg",
   },
 ];
