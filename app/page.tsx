@@ -11,12 +11,12 @@ const posters = [
   },
   {
     source: "/posters/scusateilritardo-troisi.jpg",
-    example: "/posters/scusateilritardo-troisi-example.jpg",
+    example: "/examples/scusateilritardo-troisi-example.jpg",
     target: "/posters/scusateilritardo-troisi.jpg",
   },
   {
     source: "/posters/scusateilritardo-woman.jpg",
-    example: "/posters/scusateilritardo-woman-example.jpg",
+    example: "/examples/scusateilritardo-woman-example.jpg",
     target: "/posters/scusateilritardo-woman.jpg",
   },
 ];
@@ -62,10 +62,10 @@ function PosterBlock({ p, router }: any) {
       const arrowWidth = arrowRef.current.offsetWidth;
       const arrowHeight = arrowRef.current.offsetHeight;
 
-      // 👉 bordo sinistro poster destro
+      // bordo sinistro poster destro
       const targetX = right.left - row.left;
 
-      // 👉 centro verticale poster destro
+      // centro verticale poster destro
       const targetY = right.top - row.top + right.height / 2;
 
       setPos({
@@ -74,16 +74,26 @@ function PosterBlock({ p, router }: any) {
       });
     };
 
-    update();
+    // 👉 aspetta render immagini
+    const timeout = setTimeout(update, 50);
+
     window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
+    return () => {
+      clearTimeout(timeout);
+      window.removeEventListener("resize", update);
+    };
   }, []);
 
   return (
     <div style={styles.block}>
       <div style={styles.row} ref={rowRef}>
         <img src={p.source} style={styles.posterLeft} />
-        <img src={p.example} style={styles.posterRight} ref={rightRef} />
+
+        <img
+          src={p.example}
+          style={styles.posterRight}
+          ref={rightRef}
+        />
 
         <img
           ref={arrowRef}
@@ -136,9 +146,10 @@ const styles: any = {
     marginTop: 10,
   },
 
+  // 🔥 DESKTOP 3 PER RIGA, MOBILE AUTO
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
     gap: 60,
     maxWidth: 1100,
     margin: "0 auto",
@@ -158,19 +169,24 @@ const styles: any = {
     justifyContent: "center",
   },
 
+  // 🔥 SINISTRA (più piccola)
   posterLeft: {
     width: 150,
     borderRadius: 0,
     zIndex: 1,
+    objectFit: "cover",
   },
 
+  // 🔥 DESTRA (focus + overlap leggero)
   posterRight: {
     width: 230,
     borderRadius: 0,
-    marginLeft: -35,
+    marginLeft: -25, // 👈 meno overlap rispetto a prima
     zIndex: 2,
+    objectFit: "cover",
   },
 
+  // 🔥 FRECCIA PERFETTA
   arrowOverlay: {
     position: "absolute",
     width: 80,
