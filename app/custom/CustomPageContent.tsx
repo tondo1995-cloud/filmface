@@ -1,8 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 
 export default function CustomContent() {
+  const searchParams = useSearchParams();
+  const poster = searchParams.get("poster");
+
   const [faceFile, setFaceFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
@@ -55,6 +59,11 @@ export default function CustomContent() {
       return;
     }
 
+    if (!poster) {
+      alert("POSTER NON TROVATO");
+      return;
+    }
+
     setLoading(true);
     setResult(null);
     setHdUrl(null);
@@ -62,7 +71,7 @@ export default function CustomContent() {
     try {
       const faceUrl = await uploadToCloudinary(faceFile);
 
-      const fullPosterUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/posters/wolf-fumatore.jpg`;
+      const fullPosterUrl = `${process.env.NEXT_PUBLIC_BASE_URL}${poster}`;
 
       const res = await fetch("/api/generate/roop", {
         method: "POST",
@@ -91,7 +100,6 @@ export default function CustomContent() {
       } else {
         console.error("HD URL non valida:", hd);
       }
-
     } catch (err) {
       console.error(err);
       alert("ERRORE GENERAZIONE");
@@ -134,12 +142,12 @@ export default function CustomContent() {
           METTI IL TUO AMICO IN UN FILM
         </h1>
 
-        <img
-          src="/posters/wolf-fumatore.jpg"
-          style={styles.poster}
-        />
+        {/* POSTER DINAMICO */}
+        {poster && (
+          <img src={poster} style={styles.poster} />
+        )}
 
-        {/* 🔥 UPLOAD BUTTON */}
+        {/* UPLOAD */}
         <label style={styles.uploadButton}>
           {faceFile
             ? "VOLTO CARICATO ✅"
@@ -154,19 +162,16 @@ export default function CustomContent() {
           />
         </label>
 
-        {/* 🔥 NOME FILE */}
         <p style={styles.fileName}>
           {faceFile
             ? faceFile.name
             : "Nessuna immagine caricata"}
         </p>
 
-        {/* preview */}
         {preview && (
           <img src={preview} style={styles.preview} />
         )}
 
-        {/* GENERATE */}
         <button
           style={{
             ...styles.button,
@@ -180,7 +185,6 @@ export default function CustomContent() {
             : "CREA ORA IL TUO MEME"}
         </button>
 
-        {/* RESULT */}
         {result && (
           <div style={styles.result}>
             <img src={result} style={styles.image} />
@@ -201,7 +205,7 @@ export default function CustomContent() {
   );
 }
 
-const styles = {
+const styles: any = {
   page: {
     minHeight: "100vh",
     background: "#0b0b0f",
@@ -214,7 +218,7 @@ const styles = {
 
   container: {
     width: 360,
-    textAlign: "center" as const,
+    textAlign: "center",
   },
 
   title: {
@@ -267,7 +271,7 @@ const styles = {
 
   result: {
     marginTop: 30,
-    position: "relative" as const,
+    position: "relative",
   },
 
   image: {
@@ -276,7 +280,7 @@ const styles = {
   },
 
   overlay: {
-    position: "absolute" as const,
+    position: "absolute",
     inset: 0,
     display: "flex",
     justifyContent: "center",

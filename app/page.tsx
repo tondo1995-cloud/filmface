@@ -7,6 +7,10 @@ const posters = [
   "/posters/wolf-fumatore.jpg",
   "/posters/wanted.jpg",
   "/posters/netflix.jpg",
+
+  // NUOVE LOCANDINE
+  "/posters/scusateilritardo-troisi.jpg",
+  "/posters/scusateilritardo-woman.jpg",
 ];
 
 export default function Home() {
@@ -48,12 +52,12 @@ export default function Home() {
   );
 }
 
-const styles = {
+const styles: any = {
   page: {
     minHeight: "100vh",
     background: "#0f0f0f",
     padding: 40,
-    textAlign: "center" as const,
+    textAlign: "center",
     color: "white",
     fontFamily: "var(--font-inter)",
   },

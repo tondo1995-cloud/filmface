@@ -3,14 +3,12 @@ import sharp from "sharp";
 
 export const runtime = "nodejs";
 
-// ✅ FIX DEFINITIVO ESTRAZIONE URL
+// ✅ ESTRAZIONE URL ROBUSTA
 function extractReplicateUrl(output: any): string | null {
   if (!output) return null;
 
-  // string diretta
   if (typeof output === "string") return output;
 
-  // array (caso più comune)
   if (Array.isArray(output)) {
     const first = output[0];
 
@@ -26,7 +24,6 @@ function extractReplicateUrl(output: any): string | null {
     }
   }
 
-  // oggetto singolo
   if (output?.url && typeof output.url === "string") {
     return output.url;
   }
@@ -57,6 +54,10 @@ async function applyWatermark(imageUrl: string): Promise<Buffer> {
   const image = sharp(imageBuffer);
   const metadata = await image.metadata();
 
+  if (!metadata.width || !metadata.height) {
+    throw new Error("Dimensioni immagine non valide");
+  }
+
   const resizedWatermark = await sharp(watermarkBuffer)
     .resize(metadata.width, metadata.height)
     .png()
@@ -68,32 +69,52 @@ async function applyWatermark(imageUrl: string): Promise<Buffer> {
     .toBuffer();
 }
 
-// 🚀 MAIN (SEMPLICE, SOLO FACE SWAP)
+// ⏱️ TIMEOUT UTILE (evita blocchi)
+async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error("Timeout Replicate")), ms)
+  );
+  return Promise.race([promise, timeout]);
+}
+
+// 🚀 MAIN
 export async function POST(req: Request) {
   try {
-    const { sourceImageUrl, targetImageUrl } = await req.json();
+    const body = await req.json();
+    const { sourceImageUrl, targetImageUrl } = body;
 
-    if (!sourceImageUrl || !targetImageUrl) {
-      throw new Error("Missing images");
+    // ✅ VALIDAZIONE
+    if (
+      !sourceImageUrl ||
+      !targetImageUrl ||
+      !sourceImageUrl.startsWith("http") ||
+      !targetImageUrl.startsWith("http")
+    ) {
+      return Response.json(
+        { success: false, error: "URL non validi" },
+        { status: 400 }
+      );
     }
 
     const replicate = new Replicate({
       auth: process.env.REPLICATE_API_TOKEN!,
     });
 
-    // 🔥 DEBUG (FONDAMENTALE)
     console.log("SOURCE:", sourceImageUrl);
     console.log("TARGET:", targetImageUrl);
 
-    // 🔥 FACE SWAP
-    const roopOutput = await replicate.run(
-      "okaris/roop:8c1e100ecabb3151cf1e6c62879b6de7a4b84602de464ed249b6cff0b86211d8",
-      {
-        input: {
-          source: sourceImageUrl,
-          target: targetImageUrl,
-        },
-      }
+    // 🔥 FACE SWAP + TIMEOUT
+    const roopOutput = await withTimeout(
+      replicate.run(
+        "okaris/roop:8c1e100ecabb3151cf1e6c62879b6de7a4b84602de464ed249b6cff0b86211d8",
+        {
+          input: {
+            source: sourceImageUrl,
+            target: targetImageUrl,
+          },
+        }
+      ),
+      25000 // 25s timeout
     );
 
     console.log("RAW ROOP OUTPUT:", roopOutput);
@@ -106,18 +127,17 @@ export async function POST(req: Request) {
 
     console.log("✅ ROOP OK:", roopImageUrl);
 
-    // 🔥 PREVIEW (con watermark)
-const previewBuffer = await applyWatermark(roopImageUrl);
+    // 🔥 PREVIEW con watermark
+    const previewBuffer = await applyWatermark(roopImageUrl);
+    const responseBody = new Uint8Array(previewBuffer);
 
-const body = new Uint8Array(previewBuffer);
-
-return new Response(body, {
-  headers: {
-    "Content-Type": "image/jpeg",
-    "Cache-Control": "no-store",
-    "x-hd-url": roopImageUrl,
-  },
-});
+    return new Response(responseBody, {
+      headers: {
+        "Content-Type": "image/jpeg",
+        "Cache-Control": "no-store",
+        "x-hd-url": roopImageUrl,
+      },
+    });
 
   } catch (error: any) {
     console.error("🔥 ERROR:", error);
