@@ -35,16 +35,15 @@ export default function Home() {
         Metti la faccia del tuo amico in un film in 5 secondi
       </p>
 
-      <div style={styles.list}>
+      {/* GRID RESPONSIVE */}
+      <div style={styles.grid}>
         {posters.map((p, i) => (
           <div key={i} style={styles.block}>
             
-            {/* PRIMA / DOPO */}
             <div style={styles.row}>
               <img src={p.source} style={styles.posterLeft} />
               <img src={p.example} style={styles.posterRight} />
 
-              {/* FRECCIA */}
               <img
                 src="/symbols/green-arrow.png"
                 style={styles.arrowOverlay}
@@ -94,11 +93,13 @@ const styles: any = {
     marginTop: 10,
   },
 
-  list: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 70,
-    alignItems: "center",
+  // 🔥 GRID: 3 desktop / 1 mobile automatico
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+    gap: 60,
+    maxWidth: 1100,
+    margin: "0 auto",
   },
 
   block: {
@@ -115,7 +116,7 @@ const styles: any = {
     justifyContent: "center",
   },
 
-  // 🔥 SINISTRA (70%)
+  // 🔥 SINISTRA (più piccola)
   posterLeft: {
     width: 150,
     borderRadius: 12,
@@ -123,19 +124,19 @@ const styles: any = {
     display: "block",
   },
 
-  // 🔥 DESTRA (OVERLAP + FOCUS)
+  // 🔥 DESTRA (FOCUS, meno overlap)
   posterRight: {
-    width: 240,
+    width: 230,
     borderRadius: 12,
-    marginLeft: -60, // overlap più deciso
+    marginLeft: -35, // 👈 PRIMA -60 → ORA molto più pulito
     zIndex: 2,
     display: "block",
   },
 
-  // 🔥 FRECCIA OVERLAY PERFETTA
+  // 🔥 FRECCIA
   arrowOverlay: {
     position: "absolute",
-    width: 90,
+    width: 80,
     left: "50%",
     top: "50%",
     transform: "translate(-20%, -50%)",
