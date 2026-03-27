@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 
-// ✅ SOLO LOCANDINE 2,5,6
+// ✅ SOLO LOCANDINE
 const posters = [
   "/posters/wolf-dottore-del-b.jpg",
   "/posters/scusateilritardo-troisi.jpg",
@@ -11,6 +12,16 @@ const posters = [
 
 export default function Home() {
   const router = useRouter();
+
+  // 🔥 MOBILE DETECTION
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   return (
     <div style={styles.page}>
@@ -28,7 +39,17 @@ export default function Home() {
       </p>
 
       {/* GRID */}
-      <div style={styles.grid}>
+      <div
+        style={{
+          ...styles.grid,
+          gridTemplateColumns: isMobile
+            ? "1fr"
+            : "repeat(4, 220px)",
+          justifyContent: isMobile
+            ? "center"
+            : "space-between",
+        }}
+      >
         {posters.map((poster, i) => (
           <div key={i} style={styles.card}>
             <img src={poster} style={styles.image} />
@@ -78,18 +99,16 @@ const styles: any = {
     fontSize: 16,
   },
 
-  // 🔥 GRID CONTROLLATA
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(4, 220px)", // max 4 per riga
-    justifyContent: "space-between", // distribuite su tutta larghezza
-    rowGap: 30,
+    gap: 30,
     width: "100%",
     maxWidth: 1000,
     margin: "0 auto",
   },
 
   card: {
+    width: 220, // 🔥 fondamentale per mobile centrato
     background: "#1a1a1a",
     padding: 10,
     borderRadius: 14,
