@@ -135,7 +135,7 @@ const styles: any = {
     padding: 10,
     marginLeft: -50, // 🔥 overlap reale
     zIndex: 2,
-    boxShadow: "0 20px 60px rgba(0,0,0,0.4), 0 0 20px rgba(255,200,0,0.15)",
+    boxShadow: "none",
   },
 
   // 🔥 FRECCIA SOPRA TUTTO
