@@ -114,31 +114,28 @@ const styles: any = {
     justifyContent: "center",
   },
 
-  // 🔥 SINISTRA (70%)
   posterLeft: {
     width: 150,
-    borderRadius: 0, // ✅ angoli retti
+    borderRadius: 0,
     zIndex: 1,
     display: "block",
   },
 
-  // 🔥 DESTRA (FOCUS)
   posterRight: {
     width: 230,
-    borderRadius: 0, // ✅ angoli retti
+    borderRadius: 0,
     marginLeft: -35,
     zIndex: 2,
     display: "block",
   },
 
-  // 🔥 FRECCIA PERFETTAMENTE ALLINEATA AL BORDO
+  // ✅ FRECCIA FINALMENTE CORRETTA
   arrowOverlay: {
     position: "absolute",
     width: 80,
 
-    // 👉 questo è il punto chiave:
-    left: "calc(50% - 115px)", 
-    // 115px ≈ metà width posterRight (230 / 2)
+    // 👇 bordo sinistro del poster grande = centro + metà + overlap
+    left: "calc(50% - 115px + -35px)",
 
     top: "50%",
     transform: "translate(-50%, -50%)",
