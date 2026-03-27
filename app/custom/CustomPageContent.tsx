@@ -181,7 +181,7 @@ export default function CustomContent() {
           disabled={loading}
         >
           {loading
-            ? "GENERAZIONE..."
+            ? "CREAZIONE IN CORSO (20-40s)"
             : "CREA ORA IL TUO MEME"}
         </button>
 

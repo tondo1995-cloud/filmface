@@ -104,18 +104,15 @@ export async function POST(req: Request) {
     console.log("TARGET:", targetImageUrl);
 
     // 🔥 FACE SWAP + TIMEOUT
-    const roopOutput = await withTimeout(
-      replicate.run(
-        "okaris/roop:8c1e100ecabb3151cf1e6c62879b6de7a4b84602de464ed249b6cff0b86211d8",
-        {
-          input: {
-            source: sourceImageUrl,
-            target: targetImageUrl,
-          },
-        }
-      ),
-      25000 // 25s timeout
-    );
+const roopOutput = await replicate.run(
+  "okaris/roop:8c1e100ecabb3151cf1e6c62879b6de7a4b84602de464ed249b6cff0b86211d8",
+  {
+    input: {
+      source: sourceImageUrl,
+      target: targetImageUrl,
+    },
+  }
+);
 
     console.log("RAW ROOP OUTPUT:", roopOutput);
 
