@@ -40,16 +40,16 @@ export default function Home() {
 
       {/* GRID */}
       <div
-        style={{
-          ...styles.grid,
-          gridTemplateColumns: isMobile
-            ? "1fr"
-            : "repeat(4, 220px)",
-          justifyContent: isMobile
-            ? "center"
-            : "space-between",
-        }}
-      >
+  style={{
+    ...styles.grid,
+    gridTemplateColumns: isMobile
+      ? "auto"
+      : "repeat(4, 220px)",
+    justifyContent: isMobile
+      ? "center"
+      : "space-between",
+  }}
+>
         {posters.map((poster, i) => (
           <div key={i} style={styles.card}>
             <img src={poster} style={styles.image} />
