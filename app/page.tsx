@@ -19,6 +19,18 @@ const posters = [
     example: "/examples/scusateilritardo-woman-example.jpg",
     target: "/posters/scusateilritardo-woman.jpg",
   },
+
+  // 🔥 NUOVI POSTER
+  {
+    source: "/posters/pulpfiction-man.jpg",
+    example: "/examples/pulpfiction-man-example.jpg",
+    target: "/posters/pulpfiction-man.jpg",
+  },
+  {
+    source: "/posters/pulpfiction-woman.jpg",
+    example: "/examples/pulpfiction-woman-example.jpg",
+    target: "/posters/pulpfiction-woman.jpg",
+  },
 ];
 
 export default function Home() {
@@ -164,23 +176,21 @@ const styles: any = {
     justifyContent: "center",
   },
 
-  // 🔥 SINISTRA
   posterLeft: {
     width: 150,
     borderRadius: 0,
     zIndex: 1,
     objectFit: "cover",
-    boxShadow: "0 10px 25px rgba(0,0,0,0.6)", // 👈 ombra leggera
+    boxShadow: "0 10px 25px rgba(0,0,0,0.6)",
   },
 
-  // 🔥 DESTRA (focus)
   posterRight: {
     width: 230,
     borderRadius: 0,
     marginLeft: -25,
     zIndex: 2,
     objectFit: "cover",
-    boxShadow: "0 20px 40px rgba(0,0,0,0.7)", // 👈 più profonda
+    boxShadow: "0 20px 40px rgba(0,0,0,0.7)",
   },
 
   arrowOverlay: {
