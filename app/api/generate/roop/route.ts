@@ -105,13 +105,12 @@ async function uploadToCloudinary(buffer: Buffer): Promise<string> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        file: `data:image/jpeg;base64,${base64}`,
-        upload_preset: process.env.CLOUDINARY_UPLOAD_PRESET,
+  file: `data:image/jpeg;base64,${base64}`,
+  upload_preset: process.env.CLOUDINARY_UPLOAD_PRESET,
 
-        // 🔥 SOLO PARAMETRI PERMESSI
-        folder: "filmface/generated",
-        public_id: `gen_${Date.now()}`,
-      }),
+  folder: "filmface/generated",
+  public_id: `gen_${Date.now()}`,
+}),
     }
   );
 
