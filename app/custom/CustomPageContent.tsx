@@ -3,9 +3,30 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 
+// 🔥 CLOUDINARY HARDCODE (niente magia, zero bug)
+const posterMap: Record<string, string> = {
+  "/posters/scusateilritardo-troisi.jpg":
+    "https://res.cloudinary.com/daklqmlsf/image/upload/posters/scusateilritardo-troisi.jpg",
+
+  "/posters/scusateilritardo-woman.jpg":
+    "https://res.cloudinary.com/daklqmlsf/image/upload/posters/scusateilritardo-woman.jpg",
+
+  "/posters/pulpfiction-man.jpg":
+    "https://res.cloudinary.com/daklqmlsf/image/upload/posters/pulpfiction-man.jpg",
+
+  "/posters/pulpfiction-woman.jpg":
+    "https://res.cloudinary.com/daklqmlsf/image/upload/posters/pulpfiction-woman.jpg",
+
+  "/posters/wolf-dottore-del-b.jpg":
+    "https://res.cloudinary.com/daklqmlsf/image/upload/posters/wolf-dottore-del-b.jpg",
+};
+
 export default function CustomContent() {
   const searchParams = useSearchParams();
   const poster = searchParams.get("poster");
+
+  // 🔥 QUI AVVIENE LA CONVERSIONE CRITICA
+  const cloudPoster = poster ? posterMap[poster] : null;
 
   const [faceFile, setFaceFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -23,7 +44,7 @@ export default function CustomContent() {
     return () => URL.revokeObjectURL(url);
   }, [faceFile]);
 
-  // upload volto → Cloudinary
+  // 🔥 upload volto → Cloudinary
   const uploadToCloudinary = async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -56,8 +77,9 @@ export default function CustomContent() {
       return;
     }
 
-    if (!poster) {
-      alert("POSTER NON TROVATO");
+    if (!cloudPoster) {
+      console.error("❌ POSTER NON MAPPATO:", poster);
+      alert("POSTER NON VALIDO");
       return;
     }
 
@@ -68,6 +90,9 @@ export default function CustomContent() {
     try {
       const faceUrl = await uploadToCloudinary(faceFile);
 
+      console.log("FACE:", faceUrl);
+      console.log("POSTER:", cloudPoster);
+
       const res = await fetch("/api/generate/roop", {
         method: "POST",
         headers: {
@@ -75,14 +100,15 @@ export default function CustomContent() {
         },
         body: JSON.stringify({
           sourceImageUrl: faceUrl,
-          targetImageUrl: poster, // 🔥 locale → backend lo rende pubblico
+          targetImageUrl: cloudPoster, // 🔥 SOLO CLOUDINARY
         }),
       });
 
       const data = await res.json();
 
+      console.log("ROOP RESPONSE:", data);
+
       if (!res.ok || !data.preview) {
-        console.error("❌ ROOP ERROR:", data);
         throw new Error(data?.error || "Errore generazione");
       }
 
@@ -131,8 +157,14 @@ export default function CustomContent() {
           METTI IL TUO AMICO IN UN FILM
         </h1>
 
-        {poster && (
-          <img src={poster} style={styles.poster} />
+        {!cloudPoster && (
+          <p style={{ color: "red" }}>
+            Poster non trovato. Torna indietro.
+          </p>
+        )}
+
+        {cloudPoster && (
+          <img src={cloudPoster} style={styles.poster} />
         )}
 
         <label style={styles.uploadButton}>

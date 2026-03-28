@@ -107,6 +107,9 @@ async function uploadToCloudinary(buffer: Buffer): Promise<string> {
       body: JSON.stringify({
         file: `data:image/jpeg;base64,${base64}`,
         upload_preset: process.env.CLOUDINARY_UPLOAD_PRESET,
+
+        // 🔥 AGGIUNGI QUESTO
+        public_id: `generated_${Date.now()}`, 
       }),
     }
   );
