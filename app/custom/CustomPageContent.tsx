@@ -10,7 +10,6 @@ export default function CustomContent() {
   const [faceFile, setFaceFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
-  const [hdUrl, setHdUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -66,11 +65,9 @@ export default function CustomContent() {
 
     setLoading(true);
     setResult(null);
-    setHdUrl(null);
 
     try {
       const faceUrl = await uploadToCloudinary(faceFile);
-
       const fullPosterUrl = `${process.env.NEXT_PUBLIC_BASE_URL}${poster}`;
 
       const res = await fetch("/api/generate/roop", {
@@ -91,15 +88,8 @@ export default function CustomContent() {
 
       const blob = await res.blob();
       const previewUrl = URL.createObjectURL(blob);
+
       setResult(previewUrl);
-
-      const hd = res.headers.get("x-hd-url");
-
-      if (hd && hd.startsWith("http")) {
-        setHdUrl(hd);
-      } else {
-        console.error("HD URL non valida:", hd);
-      }
     } catch (err) {
       console.error(err);
       alert("ERRORE GENERAZIONE");
@@ -109,7 +99,7 @@ export default function CustomContent() {
   };
 
   const handleCheckout = async () => {
-    if (!hdUrl) return;
+    if (!result) return;
 
     try {
       const res = await fetch("/api/checkout", {
@@ -118,7 +108,7 @@ export default function CustomContent() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          imageUrl: hdUrl,
+          imageUrl: result,
         }),
       });
 
@@ -142,7 +132,6 @@ export default function CustomContent() {
           METTI IL TUO AMICO IN UN FILM
         </h1>
 
-        {/* POSTER DINAMICO */}
         {poster && (
           <img src={poster} style={styles.poster} />
         )}
@@ -182,7 +171,7 @@ export default function CustomContent() {
         >
           {loading
             ? "CREAZIONE IN CORSO (20-40s)"
-            : "CREA ORA IL TUO MEME"}
+            : "PERSONALIZZA ORA GRATIS"}
         </button>
 
         {result && (
@@ -193,7 +182,6 @@ export default function CustomContent() {
               <button
                 style={styles.unlockButton}
                 onClick={handleCheckout}
-                disabled={!hdUrl}
               >
                 SCARICA IN HD — 0,50€
               </button>
@@ -225,7 +213,6 @@ const styles: any = {
     marginBottom: 20,
     fontFamily: "var(--font-grotesk)",
     fontWeight: 700,
-    letterSpacing: -0.5,
   },
 
   poster: {
@@ -266,7 +253,7 @@ const styles: any = {
     color: "white",
     width: "100%",
     cursor: "pointer",
-    fontWeight: 600,
+    fontWeight: 700,
   },
 
   result: {

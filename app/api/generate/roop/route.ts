@@ -3,55 +3,8 @@ import sharp from "sharp";
 
 export const runtime = "nodejs";
 
-// ✅ PARSING ULTRA ROBUSTO
-async function getImageUrl(output: any): Promise<string | null> {
-  if (!output) return null;
-
-  // 🔹 stringa diretta
-  if (typeof output === "string") return output;
-
-  // 🔹 array
-  if (Array.isArray(output)) {
-    return await getImageUrl(output[0]);
-  }
-
-  // 🔹 oggetto con url
-  if (output.url) return output.url;
-
-  // 🔹 file/blob/stream → converti a buffer e crea URL temporanea
-  if (output instanceof ReadableStream) {
-    const reader = output.getReader();
-    const chunks = [];
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-    }
-
-    const buffer = Buffer.concat(chunks);
-
-    // 👉 qui NON puoi creare URL pubblico → fallback errore chiaro
-    throw new Error("ROOP ha restituito uno stream, serve hosting intermedio");
-  }
-
-  // 🔹 fallback toString
-  if (output.toString) {
-    const str = output.toString();
-    if (str.startsWith("http")) return str;
-  }
-
-  console.error("❌ OUTPUT NON GESTITO:", output);
-  return null;
-}
-
-// ✅ WATERMARK
-async function applyWatermark(imageUrl: string): Promise<Buffer> {
-  const imageRes = await fetch(imageUrl);
-  if (!imageRes.ok) throw new Error("Errore download immagine");
-
-  const imageBuffer = Buffer.from(await imageRes.arrayBuffer());
-
+// ✅ WATERMARK (lavora su buffer diretto)
+async function applyWatermarkFromBuffer(imageBuffer: Buffer): Promise<Buffer> {
   const watermarkRes = await fetch(
     `${process.env.NEXT_PUBLIC_BASE_URL}/watermarks/watermark1.png`
   );
@@ -73,30 +26,28 @@ async function applyWatermark(imageUrl: string): Promise<Buffer> {
     .toBuffer();
 }
 
-// 🚀 MAIN
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { sourceImageUrl, targetImageUrl } = body;
+    let { sourceImageUrl, targetImageUrl } = body;
 
-    if (
-      !sourceImageUrl ||
-      !targetImageUrl ||
-      !sourceImageUrl.startsWith("http") ||
-      !targetImageUrl.startsWith("http")
-    ) {
-      return Response.json(
-        { success: false, error: "URL non validi" },
-        { status: 400 }
-      );
+    const base = process.env.NEXT_PUBLIC_BASE_URL!;
+
+    // 🔥 FORZA URL PUBBLICHE
+    if (!sourceImageUrl.startsWith("http")) {
+      sourceImageUrl = `${base}${sourceImageUrl}`;
     }
+
+    if (!targetImageUrl.startsWith("http")) {
+      targetImageUrl = `${base}${targetImageUrl}`;
+    }
+
+    console.log("FINAL SOURCE:", sourceImageUrl);
+    console.log("FINAL TARGET:", targetImageUrl);
 
     const replicate = new Replicate({
       auth: process.env.REPLICATE_API_TOKEN!,
     });
-
-    console.log("SOURCE:", sourceImageUrl);
-    console.log("TARGET:", targetImageUrl);
 
     // 🔥 ROOP
     const roopOutput = await replicate.run(
@@ -109,24 +60,49 @@ export async function POST(req: Request) {
       }
     );
 
-    console.log("RAW ROOP OUTPUT:", roopOutput);
+    console.log("RAW OUTPUT:", roopOutput);
 
-    const roopImageUrl = await getImageUrl(roopOutput);
+    let imageBuffer: Buffer;
 
-    if (!roopImageUrl) {
-      throw new Error("ROOP URL NON TROVATA (formato output non supportato)");
+    // 🔥 CASO 1: URL
+    if (typeof roopOutput === "string") {
+      const res = await fetch(roopOutput);
+      imageBuffer = Buffer.from(await res.arrayBuffer());
     }
 
-    console.log("✅ ROOP OK:", roopImageUrl);
+    // 🔥 CASO 2: ARRAY con URL
+    else if (Array.isArray(roopOutput) && typeof roopOutput[0] === "string") {
+      const res = await fetch(roopOutput[0]);
+      imageBuffer = Buffer.from(await res.arrayBuffer());
+    }
+
+    // 🔥 CASO 3: STREAM (quello che ti sta fregando)
+    else if (roopOutput instanceof ReadableStream) {
+      const reader = roopOutput.getReader();
+      const chunks = [];
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+      }
+
+      imageBuffer = Buffer.concat(chunks);
+    }
+
+    // 🔥 CASO FALLBACK
+    else {
+      console.error("❌ OUTPUT NON SUPPORTATO:", roopOutput);
+      throw new Error("Formato output ROOP non gestito");
+    }
 
     // 🔥 WATERMARK
-    const previewBuffer = await applyWatermark(roopImageUrl);
+    const previewBuffer = await applyWatermarkFromBuffer(imageBuffer);
 
     return new Response(new Uint8Array(previewBuffer), {
       headers: {
         "Content-Type": "image/jpeg",
         "Cache-Control": "no-store",
-        "x-hd-url": roopImageUrl,
       },
     });
 
