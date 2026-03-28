@@ -54,12 +54,12 @@ const posters: Poster[] = [
 
 function ReviewsTicker() {
   const reviews: Review[] = [
-    { rating: 5, text: "Il gruppo WhatsApp è impazzito" },
-    { rating: 4.5, text: "Regalo più stupido e più riuscito" },
+    { rating: 5, text: "Il gruppo whatsapp è impazzito hahahah" },
+    { rating: 4.5, text: "Regalo più stupido e più riuscito mai fatto." },
     { rating: 5, text: "Story Instagram = 30 risposte" },
-    { rating: 4, text: "Vale solo per la reazione" },
-    { rating: 5, text: "Non pensavo fosse così realistico" },
-    { rating: 4.5, text: "Lo rifaccio solo per vedere la faccia" },
+    { rating: 4, text: "vale anche solo per la reazione" },
+    { rating: 5, text: "nessuna decrizione" },
+    { rating: 4.5, text: "sto spendendo milioni su questo sito help" },
   ];
 
   const loop = [...reviews, ...reviews];
