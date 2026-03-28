@@ -23,7 +23,8 @@ const posterMap: Record<string, string> = {
 
 export default function CustomContent() {
   const searchParams = useSearchParams();
-  const poster = searchParams.get("poster");
+  const rawPoster = searchParams.get("poster");
+const poster = rawPoster ? decodeURIComponent(rawPoster) : null;
 
   // 🔥 QUI AVVIENE LA CONVERSIONE CRITICA
   const cloudPoster = poster ? posterMap[poster] : null;
