@@ -3,33 +3,14 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 
-// 🔥 CLOUDINARY HARDCODE (niente magia, zero bug)
-const posterMap: Record<string, string> = {
-  "/posters/scusateilritardo-troisi.jpg":
-    "https://res.cloudinary.com/daklqmlsf/image/upload/posters/scusateilritardo-troisi.jpg",
-
-  "/posters/scusateilritardo-woman.jpg":
-    "https://res.cloudinary.com/daklqmlsf/image/upload/posters/scusateilritardo-woman.jpg",
-
-  "/posters/pulpfiction-man.jpg":
-    "https://res.cloudinary.com/daklqmlsf/image/upload/posters/pulpfiction-man.jpg",
-
-  "/posters/pulpfiction-woman.jpg":
-    "https://res.cloudinary.com/daklqmlsf/image/upload/posters/pulpfiction-woman.jpg",
-
-  "/posters/wolf-dottore-del-b.jpg":
-    "https://res.cloudinary.com/daklqmlsf/image/upload/posters/wolf-dottore-del-b.jpg",
-};
-
 export default function CustomContent() {
   const searchParams = useSearchParams();
   const rawPoster = searchParams.get("poster");
-const poster = rawPoster ? decodeURIComponent(rawPoster) : null;
+  const poster = rawPoster ? decodeURIComponent(rawPoster) : null;
 
-  // 🔥 QUI AVVIENE LA CONVERSIONE CRITICA
   const cloudPoster = poster
-  ? `https://res.cloudinary.com/daklqmlsf/image/upload${poster}`
-  : null;
+    ? `https://res.cloudinary.com/daklqmlsf/image/upload${poster}`
+    : null;
 
   const [faceFile, setFaceFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -37,17 +18,13 @@ const poster = rawPoster ? decodeURIComponent(rawPoster) : null;
   const [hdUrl, setHdUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // preview volto
   useEffect(() => {
     if (!faceFile) return;
-
     const url = URL.createObjectURL(faceFile);
     setPreview(url);
-
     return () => URL.revokeObjectURL(url);
   }, [faceFile]);
 
-  // 🔥 upload volto → Cloudinary
   const uploadToCloudinary = async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -65,24 +42,19 @@ const poster = rawPoster ? decodeURIComponent(rawPoster) : null;
     );
 
     const data = await res.json();
-
-    if (!data.secure_url) {
-      console.error("❌ CLOUDINARY ERROR:", data);
-      throw new Error("Upload fallito");
-    }
+    if (!data.secure_url) throw new Error("Upload fallito");
 
     return data.secure_url;
   };
 
   const handleGenerate = async () => {
     if (!faceFile) {
-      alert("CARICA UNA FOTO");
+      alert("Carica una foto");
       return;
     }
 
     if (!cloudPoster) {
-      console.error("❌ POSTER NON MAPPATO:", poster);
-      alert("POSTER NON VALIDO");
+      alert("Poster non valido");
       return;
     }
 
@@ -93,9 +65,6 @@ const poster = rawPoster ? decodeURIComponent(rawPoster) : null;
     try {
       const faceUrl = await uploadToCloudinary(faceFile);
 
-      console.log("FACE:", faceUrl);
-      console.log("POSTER:", cloudPoster);
-
       const res = await fetch("/api/generate/roop", {
         method: "POST",
         headers: {
@@ -103,24 +72,20 @@ const poster = rawPoster ? decodeURIComponent(rawPoster) : null;
         },
         body: JSON.stringify({
           sourceImageUrl: faceUrl,
-          targetImageUrl: cloudPoster, // 🔥 SOLO CLOUDINARY
+          targetImageUrl: cloudPoster,
         }),
       });
 
       const data = await res.json();
 
-      console.log("ROOP RESPONSE:", data);
-
       if (!res.ok || !data.preview) {
-        throw new Error(data?.error || "Errore generazione");
+        throw new Error("Errore generazione");
       }
 
       setResult(data.preview);
       setHdUrl(data.hd);
-
     } catch (err) {
-      console.error("🔥 GENERATE ERROR:", err);
-      alert("ERRORE GENERAZIONE");
+      alert("Errore generazione");
     }
 
     setLoading(false);
@@ -145,11 +110,10 @@ const poster = rawPoster ? decodeURIComponent(rawPoster) : null;
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert("ERRORE PAGAMENTO");
+        alert("Errore pagamento");
       }
-    } catch (err) {
-      console.error(err);
-      alert("ERRORE PAGAMENTO");
+    } catch {
+      alert("Errore pagamento");
     }
   };
 
@@ -157,23 +121,15 @@ const poster = rawPoster ? decodeURIComponent(rawPoster) : null;
     <div style={styles.page}>
       <div style={styles.container}>
         <h1 style={styles.title}>
-          METTI IL TUO AMICO IN UN FILM
+          Trasforma il tuo amico in una leggenda
         </h1>
-
-        {!cloudPoster && (
-          <p style={{ color: "red" }}>
-            Poster non trovato. Torna indietro.
-          </p>
-        )}
 
         {cloudPoster && (
           <img src={cloudPoster} style={styles.poster} />
         )}
 
         <label style={styles.uploadButton}>
-          {faceFile
-            ? "VOLTO CARICATO ✅"
-            : "CARICA IL VOLTO DA INSERIRE"}
+          {faceFile ? "Volto caricato ✅" : "Carica una foto"}
           <input
             type="file"
             accept="image/*"
@@ -184,40 +140,35 @@ const poster = rawPoster ? decodeURIComponent(rawPoster) : null;
           />
         </label>
 
-        <p style={styles.fileName}>
-          {faceFile
-            ? faceFile.name
-            : "Nessuna immagine caricata"}
-        </p>
-
         {preview && (
           <img src={preview} style={styles.preview} />
         )}
 
         <button
-          style={{
-            ...styles.button,
-            opacity: loading ? 0.6 : 1,
-          }}
+          style={styles.button}
           onClick={handleGenerate}
           disabled={loading}
         >
           {loading
-            ? "CREAZIONE IN CORSO (20-40s)"
-            : "PERSONALIZZA ORA GRATIS"}
+            ? "Creazione in corso..."
+            : "Genera gratis"}
         </button>
 
         {result && (
           <div style={styles.result}>
             <img src={result} style={styles.image} />
 
-            <div style={styles.overlay}>
+            <div style={styles.ctaBox}>
+              <p style={styles.ctaText}>
+                Scarica la versione HD senza watermark
+              </p>
+
               <button
                 style={styles.unlockButton}
                 onClick={handleCheckout}
                 disabled={!hdUrl}
               >
-                SCARICA IN HD — 0,50€
+                Sblocca HD — 0,50€
               </button>
             </div>
           </div>
@@ -245,7 +196,6 @@ const styles: any = {
 
   title: {
     marginBottom: 20,
-    fontFamily: "var(--font-grotesk)",
     fontWeight: 700,
   },
 
@@ -257,19 +207,12 @@ const styles: any = {
 
   uploadButton: {
     display: "block",
-    width: "100%",
     padding: 14,
     borderRadius: 12,
     background: "white",
     color: "black",
     fontWeight: 600,
     cursor: "pointer",
-  },
-
-  fileName: {
-    marginTop: 8,
-    fontSize: 13,
-    opacity: 0.6,
   },
 
   preview: {
@@ -282,8 +225,7 @@ const styles: any = {
     marginTop: 20,
     padding: 14,
     borderRadius: 12,
-    border: "none",
-    background: "linear-gradient(135deg, #6c5cff, #8a7dff)",
+    background: "#6c5cff",
     color: "white",
     width: "100%",
     cursor: "pointer",
@@ -292,7 +234,6 @@ const styles: any = {
 
   result: {
     marginTop: 30,
-    position: "relative",
   },
 
   image: {
@@ -300,14 +241,17 @@ const styles: any = {
     borderRadius: 12,
   },
 
-  overlay: {
-    position: "absolute",
-    inset: 0,
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    background: "rgba(0,0,0,0.4)",
+  ctaBox: {
+    marginTop: 15,
+    padding: 16,
+    background: "#111",
     borderRadius: 12,
+  },
+
+  ctaText: {
+    fontSize: 14,
+    marginBottom: 10,
+    opacity: 0.8,
   },
 
   unlockButton: {
@@ -317,5 +261,6 @@ const styles: any = {
     color: "white",
     fontWeight: "bold",
     cursor: "pointer",
+    width: "100%",
   },
 };

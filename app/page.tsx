@@ -45,6 +45,13 @@ const posters: Poster[] = [
     example: "/examples/pulpfiction-woman-example.jpg",
     target: "/filmface/posters/pulpfiction-woman.jpg",
   },
+
+  // 🔥 NUOVO POSTER OSCAR
+  {
+    thumb: "/thumbs/oscars-man-awards1.jpg",
+    example: "/examples/oscars-man-awards1-example.jpg", // se manca vedi sotto fallback
+    target: "/filmface/posters/oscars-man-awards1.jpg",
+  },
 ];
 
 function ReviewsTicker() {
@@ -116,7 +123,6 @@ export default function Home() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // preload immagini
   useEffect(() => {
     const images = Array.from(document.images);
     let loaded = 0;
@@ -153,7 +159,6 @@ export default function Home() {
           😂 Il regalo più stupido (e perfetto) di sempre
         </p>
 
-        {/* 🔥 LOGO NUOVO */}
         <img
           src="/symbols/logo-arcade-filmface.png"
           alt="FilmFace"
@@ -220,8 +225,9 @@ function PosterBlock({ p, router }: PosterBlockProps) {
     <div style={styles.block}>
       <div style={styles.row} ref={rowRef}>
         <img src={p.thumb} style={styles.posterLeft} loading="lazy" alt="" />
+
         <img
-          src={p.example}
+          src={p.example || p.thumb} // 🔥 fallback sicurezza
           style={styles.posterRight}
           ref={rightRef}
           loading="lazy"
@@ -299,7 +305,6 @@ const styles: Record<string, CSSProperties> = {
   tickerOuter: {
     overflow: "hidden",
     background: "#000",
-    color: "#fff",
     padding: "10px 0",
     borderTop: "1px solid #222",
     borderBottom: "1px solid #222",
