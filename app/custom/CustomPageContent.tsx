@@ -10,8 +10,10 @@ export default function CustomContent() {
   const [faceFile, setFaceFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
+  const [hdUrl, setHdUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // preview volto uploadato
   useEffect(() => {
     if (!faceFile) return;
 
@@ -21,12 +23,14 @@ export default function CustomContent() {
     return () => URL.revokeObjectURL(url);
   }, [faceFile]);
 
+  // cleanup result
   useEffect(() => {
     return () => {
       if (result) URL.revokeObjectURL(result);
     };
   }, [result]);
 
+  // 🔥 upload Cloudinary (client)
   const uploadToCloudinary = async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -65,9 +69,13 @@ export default function CustomContent() {
 
     setLoading(true);
     setResult(null);
+    setHdUrl(null);
 
     try {
+      // 👉 upload volto
       const faceUrl = await uploadToCloudinary(faceFile);
+
+      // 👉 poster pubblico
       const fullPosterUrl = `${process.env.NEXT_PUBLIC_BASE_URL}${poster}`;
 
       const res = await fetch("/api/generate/roop", {
@@ -81,15 +89,16 @@ export default function CustomContent() {
         }),
       });
 
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text);
+      const data = await res.json();
+
+      if (!res.ok || !data.preview) {
+        throw new Error(data?.error || "Errore generazione");
       }
 
-      const blob = await res.blob();
-      const previewUrl = URL.createObjectURL(blob);
+      // 🔥 ORA USI URL (NON blob)
+      setResult(data.preview);
+      setHdUrl(data.hd);
 
-      setResult(previewUrl);
     } catch (err) {
       console.error(err);
       alert("ERRORE GENERAZIONE");
@@ -99,7 +108,7 @@ export default function CustomContent() {
   };
 
   const handleCheckout = async () => {
-    if (!result) return;
+    if (!hdUrl) return;
 
     try {
       const res = await fetch("/api/checkout", {
@@ -108,7 +117,7 @@ export default function CustomContent() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          imageUrl: result,
+          imageUrl: hdUrl,
         }),
       });
 
@@ -182,6 +191,7 @@ export default function CustomContent() {
               <button
                 style={styles.unlockButton}
                 onClick={handleCheckout}
+                disabled={!hdUrl}
               >
                 SCARICA IN HD — 0,50€
               </button>
