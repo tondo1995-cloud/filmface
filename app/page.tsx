@@ -19,8 +19,6 @@ const posters = [
     example: "/examples/scusateilritardo-woman-example.jpg",
     target: "/posters/scusateilritardo-woman.jpg",
   },
-
-  // 🔥 NUOVI POSTER
   {
     source: "/posters/pulpfiction-man.jpg",
     example: "/examples/pulpfiction-man-example.jpg",
@@ -83,7 +81,8 @@ function PosterBlock({ p, router }: any) {
       });
     };
 
-    const timeout = setTimeout(update, 50);
+    // 🔥 aspetta caricamento immagini
+    const timeout = setTimeout(update, 80);
 
     window.addEventListener("resize", update);
     return () => {
@@ -95,12 +94,17 @@ function PosterBlock({ p, router }: any) {
   return (
     <div style={styles.block}>
       <div style={styles.row} ref={rowRef}>
-        <img src={p.source} style={styles.posterLeft} />
+        <img
+          src={p.source}
+          style={styles.posterLeft}
+          onError={(e: any) => (e.currentTarget.style.display = "none")}
+        />
 
         <img
           src={p.example}
           style={styles.posterRight}
           ref={rightRef}
+          onError={(e: any) => (e.currentTarget.style.display = "none")}
         />
 
         <img
@@ -154,9 +158,10 @@ const styles: any = {
     marginTop: 10,
   },
 
+  // 🔥 3 PER RIGA SU DESKTOP
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+    gridTemplateColumns: "repeat(3, 1fr)",
     gap: 60,
     maxWidth: 1100,
     margin: "0 auto",

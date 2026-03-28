@@ -4,6 +4,19 @@ export const runtime = "nodejs";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
+// 🔥 helper URL robusto
+function getBaseUrl() {
+  if (process.env.NEXT_PUBLIC_BASE_URL) {
+    return process.env.NEXT_PUBLIC_BASE_URL;
+  }
+
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+
+  throw new Error("Missing BASE_URL");
+}
+
 export async function POST(req: Request) {
   try {
     const { imageUrl } = await req.json();
@@ -12,22 +25,17 @@ export async function POST(req: Request) {
     if (
       !imageUrl ||
       typeof imageUrl !== "string" ||
-      !imageUrl.startsWith("http") ||
+      !imageUrl.startsWith("https://") ||
       !imageUrl.includes("res.cloudinary.com")
     ) {
-      throw new Error("Invalid imageUrl (must be Cloudinary URL)");
+      console.error("❌ INVALID IMAGE URL:", imageUrl);
+      throw new Error("Invalid imageUrl (must be Cloudinary https URL)");
     }
 
-    // 🔥 BASE URL ROBUSTO
-    let BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+    const BASE_URL = getBaseUrl();
 
-    if (!BASE_URL && process.env.VERCEL_URL) {
-      BASE_URL = `https://${process.env.VERCEL_URL}`;
-    }
-
-    if (!BASE_URL) {
-      throw new Error("Missing BASE_URL");
-    }
+    console.log("✅ CHECKOUT IMAGE:", imageUrl);
+    console.log("✅ BASE URL:", BASE_URL);
 
     // 🔥 STRIPE SESSION
     const session = await stripe.checkout.sessions.create({
@@ -40,6 +48,7 @@ export async function POST(req: Request) {
             currency: "eur",
             product_data: {
               name: "Download locandina HD",
+              description: "Immagine generata con FilmFace",
             },
             unit_amount: 50, // 0.50€
           },
@@ -47,15 +56,24 @@ export async function POST(req: Request) {
         },
       ],
 
+      // 🔥 utile dopo per tracking / download
+      metadata: {
+        imageUrl,
+      },
+
       success_url: `${BASE_URL}/success?image=${encodeURIComponent(imageUrl)}`,
       cancel_url: `${BASE_URL}`,
+
     });
 
     if (!session.url) {
       throw new Error("Stripe session URL missing");
     }
 
-    return Response.json({ url: session.url });
+    return Response.json({
+      success: true,
+      url: session.url,
+    });
 
   } catch (error: any) {
     console.error("🔥 STRIPE ERROR:", error);

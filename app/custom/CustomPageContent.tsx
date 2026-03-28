@@ -3,22 +3,25 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 
-// 🔥 MAPPING POSTER → CLOUDINARY
+// 🔥 PRENDE CLOUD NAME DA ENV
+const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+
+// 🔥 MAPPING POSTER → CLOUDINARY (DINAMICO)
 const posterMap: Record<string, string> = {
   "/posters/wolf-dottore-del-b.jpg":
-    "https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/posters/wolf-dottore-del-b.jpg",
+    `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/posters/wolf-dottore-del-b.jpg`,
 
   "/posters/scusateilritardo-troisi.jpg":
-    "https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/posters/scusateilritardo-troisi.jpg",
+    `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/posters/scusateilritardo-troisi.jpg`,
 
   "/posters/scusateilritardo-woman.jpg":
-    "https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/posters/scusateilritardo-woman.jpg",
+    `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/posters/scusateilritardo-woman.jpg`,
 
   "/posters/pulpfiction-man.jpg":
-    "https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/posters/pulpfiction-man.jpg",
+    `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/posters/pulpfiction-man.jpg`,
 
   "/posters/pulpfiction-woman.jpg":
-    "https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/posters/pulpfiction-woman.jpg",
+    `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/posters/pulpfiction-woman.jpg`,
 };
 
 export default function CustomContent() {
@@ -32,6 +35,12 @@ export default function CustomContent() {
   const [result, setResult] = useState<string | null>(null);
   const [hdUrl, setHdUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // 🔥 DEBUG
+  useEffect(() => {
+    console.log("POSTER PARAM:", poster);
+    console.log("CLOUD POSTER:", cloudPoster);
+  }, [poster, cloudPoster]);
 
   // preview volto
   useEffect(() => {
@@ -53,7 +62,7 @@ export default function CustomContent() {
     );
 
     const res = await fetch(
-      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
       {
         method: "POST",
         body: formData,
@@ -63,6 +72,7 @@ export default function CustomContent() {
     const data = await res.json();
 
     if (!data.secure_url) {
+      console.error("❌ CLOUDINARY UPLOAD ERROR:", data);
       throw new Error("Upload fallito");
     }
 
@@ -76,6 +86,7 @@ export default function CustomContent() {
     }
 
     if (!cloudPoster) {
+      console.error("❌ POSTER NON TROVATO:", poster);
       alert("POSTER NON VALIDO");
       return;
     }
@@ -87,6 +98,9 @@ export default function CustomContent() {
     try {
       const faceUrl = await uploadToCloudinary(faceFile);
 
+      console.log("FACE URL:", faceUrl);
+      console.log("POSTER URL:", cloudPoster);
+
       const res = await fetch("/api/generate/roop", {
         method: "POST",
         headers: {
@@ -94,11 +108,13 @@ export default function CustomContent() {
         },
         body: JSON.stringify({
           sourceImageUrl: faceUrl,
-          targetImageUrl: cloudPoster, // 🔥 SOLO CLOUDINARY
+          targetImageUrl: cloudPoster,
         }),
       });
 
       const data = await res.json();
+
+      console.log("ROOP RESPONSE:", data);
 
       if (!res.ok || !data.preview) {
         throw new Error(data?.error || "Errore generazione");
@@ -108,7 +124,7 @@ export default function CustomContent() {
       setHdUrl(data.hd);
 
     } catch (err) {
-      console.error(err);
+      console.error("🔥 GENERATE ERROR:", err);
       alert("ERRORE GENERAZIONE");
     }
 
@@ -148,6 +164,12 @@ export default function CustomContent() {
         <h1 style={styles.title}>
           METTI IL TUO AMICO IN UN FILM
         </h1>
+
+        {!cloudPoster && (
+          <p style={{ color: "red" }}>
+            Poster non trovato. Torna indietro.
+          </p>
+        )}
 
         {cloudPoster && (
           <img src={cloudPoster} style={styles.poster} />
