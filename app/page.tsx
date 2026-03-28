@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useEffect, useState, CSSProperties } from "react";
 
 type Poster = {
-  thumb: string; // 🔥 cambiato
+  thumb: string;
   example: string;
   target: string;
 };
@@ -99,6 +99,7 @@ function ReviewsTicker() {
 export default function Home() {
   const router = useRouter();
   const [isMobile, setIsMobile] = useState(true);
+  const [ready, setReady] = useState(false); // 🔥 nuovo
 
   useEffect(() => {
     const check = () => {
@@ -111,29 +112,67 @@ export default function Home() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
+  // 🔥 preload immagini + reveal smooth
+  useEffect(() => {
+    const images = Array.from(document.images);
+    let loaded = 0;
+
+    if (images.length === 0) {
+      setReady(true);
+      return;
+    }
+
+    const onLoad = () => {
+      loaded++;
+      if (loaded === images.length) {
+        setTimeout(() => setReady(true), 200);
+      }
+    };
+
+    images.forEach((img) => {
+      if (img.complete) {
+        onLoad();
+      } else {
+        img.addEventListener("load", onLoad);
+        img.addEventListener("error", onLoad);
+      }
+    });
+  }, []);
+
+  // 🔥 schermata loading
+  if (!ready) {
+    return (
+      <div style={styles.loader}>
+        FilmFace
+      </div>
+    );
+  }
+
   return (
-    <div style={styles.page}>
-      <p style={styles.hook}>
-        😂 Il regalo più stupido (e perfetto) di sempre
-      </p>
+    <div style={styles.pageFade}>
+      <div style={styles.page}>
+        <p style={styles.hook}>
+          😂 Il regalo più stupido (e perfetto) di sempre
+        </p>
 
-      <h1 style={styles.title}>FilmFace</h1>
+        <h1 style={styles.title}>FilmFace</h1>
 
-      <p style={styles.subtitle}>
-        Metti la faccia del tuo amico in un film in 5 secondi
-      </p>
+        <p style={styles.subtitle}>
+          Metti la faccia del tuo amico in un film in 5 secondi
+        </p>
 
-      <ReviewsTicker />
+        <ReviewsTicker />
 
-      <div
-        style={{
-          ...styles.grid,
-          gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)",
-        }}
-      >
-        {posters.map((p, i) => (
-          <PosterBlock key={i} p={p} router={router} />
-        ))}
+        <div
+          style={{
+            ...styles.grid,
+            gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)",
+          }}
+        >
+          {posters.map((p, i) => (
+            <PosterBlock key={i} p={p} router={router} />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -179,12 +218,9 @@ function PosterBlock({ p, router }: PosterBlockProps) {
     <div style={styles.block}>
       <div style={styles.row} ref={rowRef}>
         <img
-          src={p.thumb} // 🔥 cambiato
+          src={p.thumb}
           style={styles.posterLeft}
           loading="lazy"
-          onError={(e) => {
-            e.currentTarget.style.display = "none";
-          }}
           alt=""
         />
 
@@ -193,9 +229,6 @@ function PosterBlock({ p, router }: PosterBlockProps) {
           style={styles.posterRight}
           ref={rightRef}
           loading="lazy"
-          onError={(e) => {
-            e.currentTarget.style.display = "none";
-          }}
           alt=""
         />
 
@@ -224,6 +257,21 @@ function PosterBlock({ p, router }: PosterBlockProps) {
 }
 
 const styles: Record<string, CSSProperties> = {
+  loader: {
+    height: "100vh",
+    background: "#0f0f0f",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "white",
+    fontSize: 20,
+    fontWeight: 600,
+  },
+
+  pageFade: {
+    animation: "fadeIn 0.4s ease",
+  },
+
   page: {
     minHeight: "100vh",
     background: "#0f0f0f",
@@ -312,7 +360,6 @@ const styles: Record<string, CSSProperties> = {
     width: "40%",
     maxWidth: 140,
     objectFit: "cover",
-    boxShadow: "0 10px 25px rgba(0,0,0,0.6)",
   },
 
   posterRight: {
@@ -320,7 +367,6 @@ const styles: Record<string, CSSProperties> = {
     maxWidth: 220,
     marginLeft: -20,
     objectFit: "cover",
-    boxShadow: "0 20px 40px rgba(0,0,0,0.7)",
   },
 
   arrowOverlay: {
