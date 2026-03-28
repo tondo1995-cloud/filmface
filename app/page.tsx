@@ -91,6 +91,10 @@ function ReviewsTicker() {
           from { transform: translateX(0); }
           to { transform: translateX(-50%); }
         }
+        @keyframes fadeIn {
+          from { opacity: 0 }
+          to { opacity: 1 }
+        }
       `}</style>
     </>
   );
@@ -99,7 +103,7 @@ function ReviewsTicker() {
 export default function Home() {
   const router = useRouter();
   const [isMobile, setIsMobile] = useState(true);
-  const [ready, setReady] = useState(false); // 🔥 nuovo
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const check = () => {
@@ -112,7 +116,7 @@ export default function Home() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // 🔥 preload immagini + reveal smooth
+  // preload immagini
   useEffect(() => {
     const images = Array.from(document.images);
     let loaded = 0;
@@ -130,22 +134,16 @@ export default function Home() {
     };
 
     images.forEach((img) => {
-      if (img.complete) {
-        onLoad();
-      } else {
+      if (img.complete) onLoad();
+      else {
         img.addEventListener("load", onLoad);
         img.addEventListener("error", onLoad);
       }
     });
   }, []);
 
-  // 🔥 schermata loading
   if (!ready) {
-    return (
-      <div style={styles.loader}>
-        FilmFace
-      </div>
-    );
+    return <div style={styles.loader}>FilmFace</div>;
   }
 
   return (
@@ -155,7 +153,12 @@ export default function Home() {
           😂 Il regalo più stupido (e perfetto) di sempre
         </p>
 
-        <h1 style={styles.title}>FilmFace</h1>
+        {/* 🔥 LOGO NUOVO */}
+        <img
+          src="/symbols/logo-arcade-filmface.png"
+          alt="FilmFace"
+          style={styles.logo}
+        />
 
         <p style={styles.subtitle}>
           Metti la faccia del tuo amico in un film in 5 secondi
@@ -205,7 +208,6 @@ function PosterBlock({ p, router }: PosterBlockProps) {
     };
 
     const timeout = window.setTimeout(update, 80);
-
     window.addEventListener("resize", update);
 
     return () => {
@@ -217,13 +219,7 @@ function PosterBlock({ p, router }: PosterBlockProps) {
   return (
     <div style={styles.block}>
       <div style={styles.row} ref={rowRef}>
-        <img
-          src={p.thumb}
-          style={styles.posterLeft}
-          loading="lazy"
-          alt=""
-        />
-
+        <img src={p.thumb} style={styles.posterLeft} loading="lazy" alt="" />
         <img
           src={p.example}
           style={styles.posterRight}
@@ -287,10 +283,11 @@ const styles: Record<string, CSSProperties> = {
     marginBottom: 10,
   },
 
-  title: {
-    fontSize: 36,
-    fontWeight: 700,
-    fontFamily: "var(--font-grotesk)",
+  logo: {
+    width: 180,
+    maxWidth: "80%",
+    margin: "10px auto 20px",
+    display: "block",
   },
 
   subtitle: {
