@@ -1,9 +1,25 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, CSSProperties } from "react";
 
-const posters = [
+type Poster = {
+  source: string;
+  example: string;
+  target: string;
+};
+
+type PosterBlockProps = {
+  p: Poster;
+  router: ReturnType<typeof useRouter>;
+};
+
+type Review = {
+  rating: number;
+  text: string;
+};
+
+const posters: Poster[] = [
   {
     source: "/posters/wolf-dottore-del-b.jpg",
     example: "/examples/wolf-dottore-del-b-example.jpg",
@@ -31,9 +47,61 @@ const posters = [
   },
 ];
 
+function ReviewsTicker() {
+  const reviews: Review[] = [
+    { rating: 5, text: "Il gruppo WhatsApp è impazzito" },
+    { rating: 4.5, text: "Regalo più stupido e più riuscito" },
+    { rating: 5, text: "Story Instagram = 30 risposte" },
+    { rating: 4, text: "Vale solo per la reazione" },
+    { rating: 5, text: "Non pensavo fosse così realistico" },
+    { rating: 4.5, text: "Lo rifaccio solo per vedere la faccia" },
+  ];
+
+  const loop = [...reviews, ...reviews];
+
+  const renderStars = (rating: number) => {
+    const full = Math.floor(rating);
+    const half = rating % 1 !== 0;
+    const empty = 5 - full - (half ? 1 : 0);
+
+    return (
+      <>
+        {"★".repeat(full)}
+        {half ? "☆" : ""}
+        {"☆".repeat(empty)}
+      </>
+    );
+  };
+
+  return (
+    <>
+      <div style={styles.tickerOuter}>
+        <div style={styles.tickerTrack}>
+          {loop.map((item, i) => (
+            <div key={i} style={styles.tickerItem}>
+              <div style={styles.tickerStars}>{renderStars(item.rating)}</div>
+              <div style={styles.tickerText}>{item.text}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <style jsx>{`
+        @keyframes scrollTicker {
+          from {
+            transform: translateX(0);
+          }
+          to {
+            transform: translateX(-50%);
+          }
+        }
+      `}</style>
+    </>
+  );
+}
+
 export default function Home() {
   const router = useRouter();
-
   const [isMobile, setIsMobile] = useState(true);
 
   useEffect(() => {
@@ -49,15 +117,15 @@ export default function Home() {
 
   return (
     <div style={styles.page}>
-      <p style={styles.hook}>
-        😂 Il regalo più stupido (e perfetto) di sempre
-      </p>
+      <p style={styles.hook}>😂 Il regalo più stupido (e perfetto) di sempre</p>
 
       <h1 style={styles.title}>FilmFace</h1>
 
       <p style={styles.subtitle}>
         Metti la faccia del tuo amico in un film in 5 secondi
       </p>
+
+      <ReviewsTicker />
 
       <div
         style={{
@@ -73,10 +141,10 @@ export default function Home() {
   );
 }
 
-function PosterBlock({ p, router }: any) {
-  const rowRef = useRef<HTMLDivElement>(null);
-  const rightRef = useRef<HTMLImageElement>(null);
-  const arrowRef = useRef<HTMLImageElement>(null);
+function PosterBlock({ p, router }: PosterBlockProps) {
+  const rowRef = useRef<HTMLDivElement | null>(null);
+  const rightRef = useRef<HTMLImageElement | null>(null);
+  const arrowRef = useRef<HTMLImageElement | null>(null);
 
   const [pos, setPos] = useState({ x: 0, y: 0 });
 
@@ -99,11 +167,12 @@ function PosterBlock({ p, router }: any) {
       });
     };
 
-    const timeout = setTimeout(update, 80);
+    const timeout = window.setTimeout(update, 80);
 
     window.addEventListener("resize", update);
+
     return () => {
-      clearTimeout(timeout);
+      window.clearTimeout(timeout);
       window.removeEventListener("resize", update);
     };
   }, []);
@@ -114,14 +183,20 @@ function PosterBlock({ p, router }: any) {
         <img
           src={p.source}
           style={styles.posterLeft}
-          onError={(e: any) => (e.currentTarget.style.display = "none")}
+          onError={(e) => {
+            e.currentTarget.style.display = "none";
+          }}
+          alt=""
         />
 
         <img
           src={p.example}
           style={styles.posterRight}
           ref={rightRef}
-          onError={(e: any) => (e.currentTarget.style.display = "none")}
+          onError={(e) => {
+            e.currentTarget.style.display = "none";
+          }}
+          alt=""
         />
 
         <img
@@ -132,6 +207,7 @@ function PosterBlock({ p, router }: any) {
             left: pos.x,
             top: pos.y,
           }}
+          alt=""
         />
       </div>
 
@@ -147,7 +223,7 @@ function PosterBlock({ p, router }: any) {
   );
 }
 
-const styles: any = {
+const styles: Record<string, CSSProperties> = {
   page: {
     minHeight: "100vh",
     background: "#0f0f0f",
@@ -171,8 +247,46 @@ const styles: any = {
 
   subtitle: {
     color: "#aaa",
-    marginBottom: 30,
+    marginBottom: 20,
     marginTop: 10,
+  },
+
+  tickerOuter: {
+    overflow: "hidden",
+    background: "#000",
+    color: "#fff",
+    padding: "10px 0",
+    borderTop: "1px solid #222",
+    borderBottom: "1px solid #222",
+    marginBottom: 20,
+  },
+
+  tickerTrack: {
+    display: "flex",
+    width: "max-content",
+    animation: "scrollTicker 20s linear infinite",
+  },
+
+  tickerItem: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    marginRight: 60,
+    minWidth: 180,
+  },
+
+  tickerStars: {
+    color: "#FFD700",
+    fontSize: 14,
+    marginBottom: 4,
+    lineHeight: 1,
+  },
+
+  tickerText: {
+    fontSize: 13,
+    opacity: 0.9,
+    textAlign: "center",
+    lineHeight: 1.2,
   },
 
   grid: {
