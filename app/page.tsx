@@ -7,27 +7,27 @@ const posters = [
   {
     source: "/posters/wolf-dottore-del-b.jpg",
     example: "/examples/wolf-dottore-del-b-example.jpg",
-    target: "/posters/wolf-dottore-del-b.jpg",
+    target: "/filmface/posters/wolf-dottore-del-b.jpg",
   },
   {
     source: "/posters/scusateilritardo-troisi.jpg",
     example: "/examples/scusateilritardo-troisi-example.jpg",
-    target: "/posters/scusateilritardo-troisi.jpg",
+    target: "/filmface/posters/scusateilritardo-troisi.jpg",
   },
   {
     source: "/posters/scusateilritardo-woman.jpg",
     example: "/examples/scusateilritardo-woman-example.jpg",
-    target: "/posters/scusateilritardo-woman.jpg",
+    target: "/filmface/posters/scusateilritardo-woman.jpg",
   },
   {
     source: "/posters/pulpfiction-man.jpg",
     example: "/examples/pulpfiction-man-example.jpg",
-    target: "/posters/pulpfiction-man.jpg",
+    target: "/filmface/posters/pulpfiction-man.jpg",
   },
   {
     source: "/posters/pulpfiction-woman.jpg",
     example: "/examples/pulpfiction-woman-example.jpg",
-    target: "/posters/pulpfiction-woman.jpg",
+    target: "/filmface/posters/pulpfiction-woman.jpg",
   },
 ];
 
@@ -81,7 +81,6 @@ function PosterBlock({ p, router }: any) {
       });
     };
 
-    // 🔥 aspetta caricamento immagini
     const timeout = setTimeout(update, 80);
 
     window.addEventListener("resize", update);
@@ -158,7 +157,6 @@ const styles: any = {
     marginTop: 10,
   },
 
-  // 🔥 3 PER RIGA SU DESKTOP
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(3, 1fr)",
@@ -183,17 +181,13 @@ const styles: any = {
 
   posterLeft: {
     width: 150,
-    borderRadius: 0,
-    zIndex: 1,
     objectFit: "cover",
     boxShadow: "0 10px 25px rgba(0,0,0,0.6)",
   },
 
   posterRight: {
     width: 230,
-    borderRadius: 0,
     marginLeft: -25,
-    zIndex: 2,
     objectFit: "cover",
     boxShadow: "0 20px 40px rgba(0,0,0,0.7)",
   },
@@ -214,6 +208,5 @@ const styles: any = {
     cursor: "pointer",
     fontWeight: 700,
     fontSize: 15,
-    letterSpacing: 0.5,
   },
 };
