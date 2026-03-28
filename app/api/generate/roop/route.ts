@@ -3,24 +3,7 @@ import sharp from "sharp";
 
 export const runtime = "nodejs";
 
-
-// 🔥 NORMALIZZA URL (CRITICO)
-function toPublicUrl(url: string) {
-  if (!url) return "";
-
-  if (!url.startsWith("http")) {
-    return `${process.env.NEXT_PUBLIC_BASE_URL}${url}`;
-  }
-
-  if (url.startsWith("http://")) {
-    return url.replace("http://", "https://");
-  }
-
-  return url;
-}
-
-
-// 🔥 CONVERTE OUTPUT → BUFFER (ROBUSTO)
+// 🔥 OUTPUT → BUFFER (ULTRA ROBUSTO)
 async function getBuffer(output: any): Promise<Buffer> {
   if (!output) throw new Error("Output vuoto");
 
@@ -43,7 +26,7 @@ async function getBuffer(output: any): Promise<Buffer> {
     return Buffer.from(await res.arrayBuffer());
   }
 
-  // stream (ROOP recente)
+  // stream
   if (output instanceof ReadableStream) {
     const reader = output.getReader();
     const chunks: Uint8Array[] = [];
@@ -56,9 +39,7 @@ async function getBuffer(output: any): Promise<Buffer> {
 
     const buffer = Buffer.concat(chunks);
 
-    if (!buffer || buffer.length === 0) {
-      throw new Error("Stream vuoto");
-    }
+    if (!buffer.length) throw new Error("Stream vuoto");
 
     return buffer;
   }
@@ -66,7 +47,6 @@ async function getBuffer(output: any): Promise<Buffer> {
   console.error("❌ OUTPUT NON SUPPORTATO:", output);
   throw new Error("Formato output ROOP non gestito");
 }
-
 
 // 🔥 WATERMARK
 async function applyWatermark(buffer: Buffer): Promise<Buffer> {
@@ -96,29 +76,21 @@ async function applyWatermark(buffer: Buffer): Promise<Buffer> {
     .toBuffer();
 }
 
-
-// 🔥 UPLOAD CLOUDINARY (FIX BUFFER → FILE)
+// 🔥 UPLOAD CLOUDINARY (SERVER SAFE)
 async function uploadToCloudinary(buffer: Buffer): Promise<string> {
-  const formData = new FormData();
-
-  const file = new File(
-    [new Uint8Array(buffer)],
-    "image.jpg",
-    { type: "image/jpeg" }
-  );
-
-  formData.append("file", file);
-
-  formData.append(
-    "upload_preset",
-    process.env.CLOUDINARY_UPLOAD_PRESET!
-  );
+  const base64 = buffer.toString("base64");
 
   const res = await fetch(
     `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload`,
     {
       method: "POST",
-      body: formData,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        file: `data:image/jpeg;base64,${base64}`,
+        upload_preset: process.env.CLOUDINARY_UPLOAD_PRESET,
+      }),
     }
   );
 
@@ -132,24 +104,32 @@ async function uploadToCloudinary(buffer: Buffer): Promise<string> {
   return data.secure_url;
 }
 
-
 // 🚀 MAIN
 export async function POST(req: Request) {
   try {
-    let { sourceImageUrl, targetImageUrl } = await req.json();
+    const { sourceImageUrl, targetImageUrl } = await req.json();
 
-    // 🔥 NORMALIZZA SEMPRE
-    sourceImageUrl = toPublicUrl(sourceImageUrl);
-    targetImageUrl = toPublicUrl(targetImageUrl);
+    // 🔥 VALIDAZIONE
+    if (
+      !sourceImageUrl?.includes("res.cloudinary.com") ||
+      !targetImageUrl?.includes("res.cloudinary.com")
+    ) {
+      console.error("❌ URL NON CLOUDINARY:", {
+        sourceImageUrl,
+        targetImageUrl,
+      });
 
-    console.log("🔥 FINAL SOURCE:", sourceImageUrl);
-    console.log("🔥 FINAL TARGET:", targetImageUrl);
+      throw new Error("Le immagini devono essere su Cloudinary");
+    }
+
+    console.log("✅ SOURCE:", sourceImageUrl);
+    console.log("✅ TARGET:", targetImageUrl);
 
     const replicate = new Replicate({
       auth: process.env.REPLICATE_API_TOKEN!,
     });
 
-    // 🔥 ROOP (PROTETTO)
+    // 🔥 ROOP
     let output;
 
     try {
@@ -176,14 +156,10 @@ export async function POST(req: Request) {
     // 🔥 BUFFER
     const buffer = await getBuffer(output);
 
-    if (!buffer || buffer.length === 0) {
-      throw new Error("Buffer vuoto");
-    }
-
-    // 🔥 WATERMARK
+    // 🔥 PREVIEW
     const previewBuffer = await applyWatermark(buffer);
 
-    // 🔥 CLOUDINARY
+    // 🔥 CLOUDINARY (SEMPRE)
     const previewUrl = await uploadToCloudinary(previewBuffer);
     const hdUrl = await uploadToCloudinary(buffer);
 

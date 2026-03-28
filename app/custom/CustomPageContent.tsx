@@ -3,9 +3,29 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 
+// 🔥 MAPPING POSTER → CLOUDINARY
+const posterMap: Record<string, string> = {
+  "/posters/wolf-dottore-del-b.jpg":
+    "https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/posters/wolf-dottore-del-b.jpg",
+
+  "/posters/scusateilritardo-troisi.jpg":
+    "https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/posters/scusateilritardo-troisi.jpg",
+
+  "/posters/scusateilritardo-woman.jpg":
+    "https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/posters/scusateilritardo-woman.jpg",
+
+  "/posters/pulpfiction-man.jpg":
+    "https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/posters/pulpfiction-man.jpg",
+
+  "/posters/pulpfiction-woman.jpg":
+    "https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/posters/pulpfiction-woman.jpg",
+};
+
 export default function CustomContent() {
   const searchParams = useSearchParams();
   const poster = searchParams.get("poster");
+
+  const cloudPoster = poster ? posterMap[poster] : null;
 
   const [faceFile, setFaceFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -13,7 +33,7 @@ export default function CustomContent() {
   const [hdUrl, setHdUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // preview volto uploadato
+  // preview volto
   useEffect(() => {
     if (!faceFile) return;
 
@@ -23,14 +43,7 @@ export default function CustomContent() {
     return () => URL.revokeObjectURL(url);
   }, [faceFile]);
 
-  // cleanup result
-  useEffect(() => {
-    return () => {
-      if (result) URL.revokeObjectURL(result);
-    };
-  }, [result]);
-
-  // 🔥 upload Cloudinary (client)
+  // 🔥 upload volto → Cloudinary
   const uploadToCloudinary = async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -62,8 +75,8 @@ export default function CustomContent() {
       return;
     }
 
-    if (!poster) {
-      alert("POSTER NON TROVATO");
+    if (!cloudPoster) {
+      alert("POSTER NON VALIDO");
       return;
     }
 
@@ -72,11 +85,7 @@ export default function CustomContent() {
     setHdUrl(null);
 
     try {
-      // 👉 upload volto
       const faceUrl = await uploadToCloudinary(faceFile);
-
-      // 👉 poster pubblico
-      const fullPosterUrl = `${process.env.NEXT_PUBLIC_BASE_URL}${poster}`;
 
       const res = await fetch("/api/generate/roop", {
         method: "POST",
@@ -85,7 +94,7 @@ export default function CustomContent() {
         },
         body: JSON.stringify({
           sourceImageUrl: faceUrl,
-          targetImageUrl: fullPosterUrl,
+          targetImageUrl: cloudPoster, // 🔥 SOLO CLOUDINARY
         }),
       });
 
@@ -95,7 +104,6 @@ export default function CustomContent() {
         throw new Error(data?.error || "Errore generazione");
       }
 
-      // 🔥 ORA USI URL (NON blob)
       setResult(data.preview);
       setHdUrl(data.hd);
 
@@ -141,11 +149,10 @@ export default function CustomContent() {
           METTI IL TUO AMICO IN UN FILM
         </h1>
 
-        {poster && (
-          <img src={poster} style={styles.poster} />
+        {cloudPoster && (
+          <img src={cloudPoster} style={styles.poster} />
         )}
 
-        {/* UPLOAD */}
         <label style={styles.uploadButton}>
           {faceFile
             ? "VOLTO CARICATO ✅"
