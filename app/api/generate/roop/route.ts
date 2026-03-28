@@ -3,31 +3,50 @@ import sharp from "sharp";
 
 export const runtime = "nodejs";
 
-// 🔥 CONVERTE QUALSIASI OUTPUT IN BUFFER
+
+// 🔥 NORMALIZZA URL (CRITICO)
+function toPublicUrl(url: string) {
+  if (!url) return "";
+
+  if (!url.startsWith("http")) {
+    return `${process.env.NEXT_PUBLIC_BASE_URL}${url}`;
+  }
+
+  if (url.startsWith("http://")) {
+    return url.replace("http://", "https://");
+  }
+
+  return url;
+}
+
+
+// 🔥 CONVERTE OUTPUT → BUFFER (ROBUSTO)
 async function getBuffer(output: any): Promise<Buffer> {
   if (!output) throw new Error("Output vuoto");
 
-  // 👉 URL stringa
+  // string URL
   if (typeof output === "string") {
     const res = await fetch(output);
+    if (!res.ok) throw new Error("Fetch output fallito");
     return Buffer.from(await res.arrayBuffer());
   }
 
-  // 👉 array
+  // array
   if (Array.isArray(output)) {
     return getBuffer(output[0]);
   }
 
-  // 👉 oggetto con url
+  // oggetto con url
   if (output?.url) {
     const res = await fetch(output.url);
+    if (!res.ok) throw new Error("Fetch output.url fallito");
     return Buffer.from(await res.arrayBuffer());
   }
 
-  // 👉 stream (caso roop recente)
+  // stream (ROOP recente)
   if (output instanceof ReadableStream) {
     const reader = output.getReader();
-    const chunks = [];
+    const chunks: Uint8Array[] = [];
 
     while (true) {
       const { done, value } = await reader.read();
@@ -35,14 +54,21 @@ async function getBuffer(output: any): Promise<Buffer> {
       chunks.push(value);
     }
 
-    return Buffer.concat(chunks);
+    const buffer = Buffer.concat(chunks);
+
+    if (!buffer || buffer.length === 0) {
+      throw new Error("Stream vuoto");
+    }
+
+    return buffer;
   }
 
   console.error("❌ OUTPUT NON SUPPORTATO:", output);
   throw new Error("Formato output ROOP non gestito");
 }
 
-// 🔥 WATERMARK SU BUFFER
+
+// 🔥 WATERMARK
 async function applyWatermark(buffer: Buffer): Promise<Buffer> {
   const watermarkRes = await fetch(
     `${process.env.NEXT_PUBLIC_BASE_URL}/watermarks/watermark1.png`
@@ -55,6 +81,10 @@ async function applyWatermark(buffer: Buffer): Promise<Buffer> {
   const image = sharp(buffer);
   const metadata = await image.metadata();
 
+  if (!metadata.width || !metadata.height) {
+    throw new Error("Dimensioni immagine non valide");
+  }
+
   const resizedWatermark = await sharp(watermarkBuffer)
     .resize(metadata.width, metadata.height)
     .png()
@@ -66,14 +96,18 @@ async function applyWatermark(buffer: Buffer): Promise<Buffer> {
     .toBuffer();
 }
 
-// 🔥 UPLOAD CLOUDINARY (SERVER)
+
+// 🔥 UPLOAD CLOUDINARY (FIX BUFFER → FILE)
 async function uploadToCloudinary(buffer: Buffer): Promise<string> {
   const formData = new FormData();
 
-  formData.append(
-    "file",
-    new Blob([new Uint8Array(buffer)], { type: "image/jpeg" })
+  const file = new File(
+    [new Uint8Array(buffer)],
+    "image.jpg",
+    { type: "image/jpeg" }
   );
+
+  formData.append("file", file);
 
   formData.append(
     "upload_preset",
@@ -98,56 +132,64 @@ async function uploadToCloudinary(buffer: Buffer): Promise<string> {
   return data.secure_url;
 }
 
+
 // 🚀 MAIN
 export async function POST(req: Request) {
   try {
     let { sourceImageUrl, targetImageUrl } = await req.json();
 
-    const base = process.env.NEXT_PUBLIC_BASE_URL!;
+    // 🔥 NORMALIZZA SEMPRE
+    sourceImageUrl = toPublicUrl(sourceImageUrl);
+    targetImageUrl = toPublicUrl(targetImageUrl);
 
-    // 👉 normalizza URL
-    if (!sourceImageUrl.startsWith("http")) {
-      sourceImageUrl = `${base}${sourceImageUrl}`;
-    }
-
-    if (!targetImageUrl.startsWith("http")) {
-      targetImageUrl = `${base}${targetImageUrl}`;
-    }
-
-    console.log("SOURCE:", sourceImageUrl);
-    console.log("TARGET:", targetImageUrl);
+    console.log("🔥 FINAL SOURCE:", sourceImageUrl);
+    console.log("🔥 FINAL TARGET:", targetImageUrl);
 
     const replicate = new Replicate({
       auth: process.env.REPLICATE_API_TOKEN!,
     });
 
-    // 🔥 ROOP
-    const output = await replicate.run(
-      "okaris/roop:8c1e100ecabb3151cf1e6c62879b6de7a4b84602de464ed249b6cff0b86211d8",
-      {
-        input: {
-          source: sourceImageUrl,
-          target: targetImageUrl,
-        },
-      }
-    );
+    // 🔥 ROOP (PROTETTO)
+    let output;
+
+    try {
+      output = await replicate.run(
+        "okaris/roop:8c1e100ecabb3151cf1e6c62879b6de7a4b84602de464ed249b6cff0b86211d8",
+        {
+          input: {
+            source: sourceImageUrl,
+            target: targetImageUrl,
+          },
+        }
+      );
+    } catch (e) {
+      console.error("❌ ROOP CRASH:", e);
+      throw new Error("ROOP fallito");
+    }
 
     console.log("RAW OUTPUT:", output);
 
-    // 🔥 SEMPRE BUFFER
+    if (!output) {
+      throw new Error("Output vuoto da Replicate");
+    }
+
+    // 🔥 BUFFER
     const buffer = await getBuffer(output);
 
-    // 🔥 PREVIEW (con watermark)
+    if (!buffer || buffer.length === 0) {
+      throw new Error("Buffer vuoto");
+    }
+
+    // 🔥 WATERMARK
     const previewBuffer = await applyWatermark(buffer);
 
-    // 🔥 UPLOAD CLOUDINARY
+    // 🔥 CLOUDINARY
     const previewUrl = await uploadToCloudinary(previewBuffer);
     const hdUrl = await uploadToCloudinary(buffer);
 
     console.log("✅ PREVIEW:", previewUrl);
     console.log("✅ HD:", hdUrl);
 
-    // 🔥 OUTPUT STANDARD
     return Response.json({
       success: true,
       preview: previewUrl,
