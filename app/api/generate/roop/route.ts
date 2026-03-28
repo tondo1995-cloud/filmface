@@ -3,7 +3,7 @@ import sharp from "sharp";
 
 export const runtime = "nodejs";
 
-// 🔥 NORMALIZZA URL (CRITICO)
+// 🔥 NORMALIZZA URL
 function toPublicUrl(url: string) {
   if (!url) return "";
 
@@ -18,36 +18,30 @@ function toPublicUrl(url: string) {
   return url;
 }
 
-// 🔥 OUTPUT → BUFFER (ROBUSTO)
+// 🔥 OUTPUT → BUFFER
 async function getBuffer(output: any): Promise<Buffer> {
   if (!output) throw new Error("Output vuoto");
 
-  // 👉 array
   if (Array.isArray(output)) {
     return getBuffer(output[0]);
   }
 
-  // 👉 string URL (caso vecchio)
   if (typeof output === "string" && output.startsWith("http")) {
     const res = await fetch(output);
     return Buffer.from(await res.arrayBuffer());
   }
 
-  // 👉 oggetto replicato moderno (FileOutput)
   if (output?.url && typeof output.url === "function") {
     const realUrl = output.url().toString();
-
     const res = await fetch(realUrl);
     return Buffer.from(await res.arrayBuffer());
   }
 
-  // 👉 oggetto con url string
   if (output?.url && typeof output.url === "string") {
     const res = await fetch(output.url);
     return Buffer.from(await res.arrayBuffer());
   }
 
-  // 👉 stream
   if (output instanceof ReadableStream) {
     const reader = output.getReader();
     const chunks: Uint8Array[] = [];
@@ -93,9 +87,11 @@ async function applyWatermark(buffer: Buffer): Promise<Buffer> {
     .toBuffer();
 }
 
-// 🔥 UPLOAD CLOUDINARY
+// 🔥 UPLOAD CLOUDINARY (FIX DEFINITIVO)
 async function uploadToCloudinary(buffer: Buffer): Promise<string> {
   const base64 = buffer.toString("base64");
+
+  const publicId = `gen_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
 
   const res = await fetch(
     `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload`,
@@ -105,12 +101,16 @@ async function uploadToCloudinary(buffer: Buffer): Promise<string> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-  file: `data:image/jpeg;base64,${base64}`,
-  upload_preset: process.env.CLOUDINARY_UPLOAD_PRESET,
+        file: `data:image/jpeg;base64,${base64}`,
+        upload_preset: process.env.CLOUDINARY_UPLOAD_PRESET,
 
-  folder: "filmface/generated",
-  public_id: `gen_${Date.now()}`,
-}),
+        // 🔥 IMPORTANTISSIMO
+        public_id: publicId,
+        folder: "filmface/generated",
+        display_name: publicId, // 👈 QUESTO RISOLVE DEFINITIVAMENTE
+
+        overwrite: false,
+      }),
     }
   );
 
@@ -129,7 +129,6 @@ export async function POST(req: Request) {
   try {
     let { sourceImageUrl, targetImageUrl } = await req.json();
 
-    // 🔥 NORMALIZZA URL (QUI STA LA MAGIA)
     sourceImageUrl = toPublicUrl(sourceImageUrl);
     targetImageUrl = toPublicUrl(targetImageUrl);
 
@@ -140,7 +139,6 @@ export async function POST(req: Request) {
       auth: process.env.REPLICATE_API_TOKEN!,
     });
 
-    // 🔥 ROOP
     const output = await replicate.run(
       "okaris/roop:8c1e100ecabb3151cf1e6c62879b6de7a4b84602de464ed249b6cff0b86211d8",
       {
@@ -157,13 +155,9 @@ export async function POST(req: Request) {
       throw new Error("Output vuoto da Replicate");
     }
 
-    // 🔥 BUFFER
     const buffer = await getBuffer(output);
-
-    // 🔥 PREVIEW
     const previewBuffer = await applyWatermark(buffer);
 
-    // 🔥 CLOUDINARY
     const previewUrl = await uploadToCloudinary(previewBuffer);
     const hdUrl = await uploadToCloudinary(buffer);
 
