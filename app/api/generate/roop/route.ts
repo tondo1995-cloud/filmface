@@ -22,9 +22,7 @@ function toPublicUrl(url: string) {
 async function getBuffer(output: any): Promise<Buffer> {
   if (!output) throw new Error("Output vuoto");
 
-  if (Array.isArray(output)) {
-    return getBuffer(output[0]);
-  }
+  if (Array.isArray(output)) return getBuffer(output[0]);
 
   if (typeof output === "string" && output.startsWith("http")) {
     const res = await fetch(output);
@@ -32,8 +30,7 @@ async function getBuffer(output: any): Promise<Buffer> {
   }
 
   if (output?.url && typeof output.url === "function") {
-    const realUrl = output.url().toString();
-    const res = await fetch(realUrl);
+    const res = await fetch(output.url().toString());
     return Buffer.from(await res.arrayBuffer());
   }
 
@@ -42,21 +39,20 @@ async function getBuffer(output: any): Promise<Buffer> {
     return Buffer.from(await res.arrayBuffer());
   }
 
-  if (output instanceof ReadableStream) {
-    const reader = output.getReader();
-    const chunks: Uint8Array[] = [];
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-    }
-
-    return Buffer.concat(chunks);
-  }
-
   console.error("❌ OUTPUT NON GESTITO:", output);
   throw new Error("Formato output ROOP non gestito");
+}
+
+// 🔥 RIDIMENSIONA PER ROOP (CRITICO)
+async function resizeForRoop(buffer: Buffer): Promise<Buffer> {
+  return sharp(buffer)
+    .resize({
+      width: 1024,
+      height: 1024,
+      fit: "inside",
+    })
+    .jpeg({ quality: 90 })
+    .toBuffer();
 }
 
 // 🔥 WATERMARK
@@ -65,23 +61,17 @@ async function applyWatermark(buffer: Buffer): Promise<Buffer> {
     `${process.env.NEXT_PUBLIC_BASE_URL}/watermarks/watermark1.png`
   );
 
-  if (!watermarkRes.ok) throw new Error("Errore watermark");
-
   const watermarkBuffer = Buffer.from(await watermarkRes.arrayBuffer());
 
   const image = sharp(buffer);
   const metadata = await image.metadata();
-
-  if (!metadata.width || !metadata.height) {
-    throw new Error("Dimensioni immagine non valide");
-  }
 
   const resizedWatermark = await sharp(watermarkBuffer)
     .resize(metadata.width, metadata.height)
     .png()
     .toBuffer();
 
-  return await image
+  return image
     .composite([{ input: resizedWatermark }])
     .jpeg({ quality: 95 })
     .toBuffer();
@@ -91,19 +81,14 @@ async function applyWatermark(buffer: Buffer): Promise<Buffer> {
 async function uploadToCloudinary(buffer: Buffer): Promise<string> {
   const base64 = buffer.toString("base64");
 
-  const publicId = `gen_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-
   const res = await fetch(
     `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload`,
     {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         file: `data:image/jpeg;base64,${base64}`,
         upload_preset: process.env.CLOUDINARY_UPLOAD_PRESET,
-        public_id: publicId,
         folder: "filmface/generated",
       }),
     }
@@ -113,7 +98,7 @@ async function uploadToCloudinary(buffer: Buffer): Promise<string> {
 
   if (!data.secure_url) {
     console.error("❌ CLOUDINARY ERROR:", data);
-    throw new Error("Upload Cloudinary fallito");
+    throw new Error("Upload fallito");
   }
 
   return data.secure_url;
@@ -127,21 +112,30 @@ export async function POST(req: Request) {
     sourceImageUrl = toPublicUrl(sourceImageUrl);
     targetImageUrl = toPublicUrl(targetImageUrl);
 
-    console.log("🔥 SOURCE:", sourceImageUrl);
-    console.log("🔥 TARGET:", targetImageUrl);
-
     const replicate = new Replicate({
       auth: process.env.REPLICATE_API_TOKEN!,
     });
 
+    // 🔥 1. scarico target HD
+    const targetRes = await fetch(targetImageUrl);
+    const targetBuffer = Buffer.from(await targetRes.arrayBuffer());
+
+    // 🔥 2. ridimensiono SOLO per ROOP
+    const resizedTarget = await resizeForRoop(targetBuffer);
+
+    // 🔥 3. carico versione ridotta (NO base64 diretto a ROOP)
+    const resizedTargetUrl = await uploadToCloudinary(resizedTarget);
+
+    console.log("🔥 TARGET RESIZED:", resizedTargetUrl);
+
+    // 🔥 4. ROOP
     const output = await replicate.run(
       "okaris/roop:8c1e100ecabb3151cf1e6c62879b6de7a4b84602de464ed249b6cff0b86211d8",
       {
         input: {
           source: sourceImageUrl,
-          target: targetImageUrl,
+          target: resizedTargetUrl,
 
-          // 🔥 AGGIUNTO (CRITICO)
           keep_fps: true,
           keep_frames: true,
           enhance_face: true,
@@ -149,20 +143,14 @@ export async function POST(req: Request) {
       }
     );
 
-    console.log("RAW OUTPUT:", output);
+    if (!output) throw new Error("Output vuoto");
 
-    if (!output) {
-      throw new Error("Output vuoto da Replicate");
-    }
-
+    // 🔥 5. output finale
     const buffer = await getBuffer(output);
     const previewBuffer = await applyWatermark(buffer);
 
     const previewUrl = await uploadToCloudinary(previewBuffer);
     const hdUrl = await uploadToCloudinary(buffer);
-
-    console.log("✅ PREVIEW:", previewUrl);
-    console.log("✅ HD:", hdUrl);
 
     return Response.json({
       success: true,
