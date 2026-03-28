@@ -87,7 +87,7 @@ async function applyWatermark(buffer: Buffer): Promise<Buffer> {
     .toBuffer();
 }
 
-// 🔥 UPLOAD CLOUDINARY (FIX DEFINITIVO)
+// 🔥 UPLOAD CLOUDINARY (CORRETTO)
 async function uploadToCloudinary(buffer: Buffer): Promise<string> {
   const base64 = buffer.toString("base64");
 
@@ -104,12 +104,10 @@ async function uploadToCloudinary(buffer: Buffer): Promise<string> {
         file: `data:image/jpeg;base64,${base64}`,
         upload_preset: process.env.CLOUDINARY_UPLOAD_PRESET,
 
-        // 🔥 IMPORTANTISSIMO
+        // ✅ SOLO PARAMETRI PERMESSI
         public_id: publicId,
         folder: "filmface/generated",
-        display_name: publicId, // 👈 QUESTO RISOLVE DEFINITIVAMENTE
-
-        overwrite: false,
+        display_name: publicId,
       }),
     }
   );
