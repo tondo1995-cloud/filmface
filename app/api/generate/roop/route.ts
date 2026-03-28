@@ -3,30 +3,41 @@ import sharp from "sharp";
 
 export const runtime = "nodejs";
 
-// 🔥 OUTPUT → BUFFER (ULTRA ROBUSTO)
+// 🔥 NORMALIZZA URL (CRITICO)
+function toPublicUrl(url: string) {
+  if (!url) return "";
+
+  if (!url.startsWith("http")) {
+    return `${process.env.NEXT_PUBLIC_BASE_URL}${url}`;
+  }
+
+  if (url.startsWith("http://")) {
+    return url.replace("http://", "https://");
+  }
+
+  return url;
+}
+
+// 🔥 OUTPUT → BUFFER (ROBUSTO)
 async function getBuffer(output: any): Promise<Buffer> {
   if (!output) throw new Error("Output vuoto");
 
-  // string URL
   if (typeof output === "string") {
     const res = await fetch(output);
     if (!res.ok) throw new Error("Fetch output fallito");
     return Buffer.from(await res.arrayBuffer());
   }
 
-  // array
   if (Array.isArray(output)) {
     return getBuffer(output[0]);
   }
 
-  // oggetto con url
   if (output?.url) {
     const res = await fetch(output.url);
     if (!res.ok) throw new Error("Fetch output.url fallito");
     return Buffer.from(await res.arrayBuffer());
   }
 
-  // stream
   if (output instanceof ReadableStream) {
     const reader = output.getReader();
     const chunks: Uint8Array[] = [];
@@ -76,7 +87,7 @@ async function applyWatermark(buffer: Buffer): Promise<Buffer> {
     .toBuffer();
 }
 
-// 🔥 UPLOAD CLOUDINARY (SERVER SAFE)
+// 🔥 UPLOAD CLOUDINARY
 async function uploadToCloudinary(buffer: Buffer): Promise<string> {
   const base64 = buffer.toString("base64");
 
@@ -107,45 +118,29 @@ async function uploadToCloudinary(buffer: Buffer): Promise<string> {
 // 🚀 MAIN
 export async function POST(req: Request) {
   try {
-    const { sourceImageUrl, targetImageUrl } = await req.json();
+    let { sourceImageUrl, targetImageUrl } = await req.json();
 
-    // 🔥 VALIDAZIONE
-    if (
-      !sourceImageUrl?.includes("res.cloudinary.com") ||
-      !targetImageUrl?.includes("res.cloudinary.com")
-    ) {
-      console.error("❌ URL NON CLOUDINARY:", {
-        sourceImageUrl,
-        targetImageUrl,
-      });
+    // 🔥 NORMALIZZA URL (QUI STA LA MAGIA)
+    sourceImageUrl = toPublicUrl(sourceImageUrl);
+    targetImageUrl = toPublicUrl(targetImageUrl);
 
-      throw new Error("Le immagini devono essere su Cloudinary");
-    }
-
-    console.log("✅ SOURCE:", sourceImageUrl);
-    console.log("✅ TARGET:", targetImageUrl);
+    console.log("🔥 SOURCE:", sourceImageUrl);
+    console.log("🔥 TARGET:", targetImageUrl);
 
     const replicate = new Replicate({
       auth: process.env.REPLICATE_API_TOKEN!,
     });
 
     // 🔥 ROOP
-    let output;
-
-    try {
-      output = await replicate.run(
-        "okaris/roop:8c1e100ecabb3151cf1e6c62879b6de7a4b84602de464ed249b6cff0b86211d8",
-        {
-          input: {
-            source: sourceImageUrl,
-            target: targetImageUrl,
-          },
-        }
-      );
-    } catch (e) {
-      console.error("❌ ROOP CRASH:", e);
-      throw new Error("ROOP fallito");
-    }
+    const output = await replicate.run(
+      "okaris/roop:8c1e100ecabb3151cf1e6c62879b6de7a4b84602de464ed249b6cff0b86211d8",
+      {
+        input: {
+          source: sourceImageUrl,
+          target: targetImageUrl,
+        },
+      }
+    );
 
     console.log("RAW OUTPUT:", output);
 
@@ -159,7 +154,7 @@ export async function POST(req: Request) {
     // 🔥 PREVIEW
     const previewBuffer = await applyWatermark(buffer);
 
-    // 🔥 CLOUDINARY (SEMPRE)
+    // 🔥 CLOUDINARY
     const previewUrl = await uploadToCloudinary(previewBuffer);
     const hdUrl = await uploadToCloudinary(buffer);
 
