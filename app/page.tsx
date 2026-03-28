@@ -23,34 +23,32 @@ const posters: Poster[] = [
   {
     thumb: "/thumbs/wolf-dottore-del-b.jpg",
     example: "/examples/wolf-dottore-del-b-example.jpg",
-    target: "/posters/wolf-dottore-del-b.jpg",
+    target: "/filmface/posters/wolf-dottore-del-b.jpg",
   },
   {
     thumb: "/thumbs/scusateilritardo-troisi.jpg",
     example: "/examples/scusateilritardo-troisi-example.jpg",
-    target: "/posters/scusateilritardo-troisi.jpg",
+    target: "/filmface/posters/scusateilritardo-troisi.jpg",
   },
   {
     thumb: "/thumbs/scusateilritardo-woman.jpg",
     example: "/examples/scusateilritardo-woman-example.jpg",
-    target: "/posters/scusateilritardo-woman.jpg",
+    target: "/filmface/posters/scusateilritardo-woman.jpg",
   },
   {
     thumb: "/thumbs/pulpfiction-man.jpg",
     example: "/examples/pulpfiction-man-example.jpg",
-    target: "/posters/pulpfiction-man.jpg",
+    target: "/filmface/posters/pulpfiction-man.jpg",
   },
   {
     thumb: "/thumbs/pulpfiction-woman.jpg",
     example: "/examples/pulpfiction-woman-example.jpg",
-    target: "/posters/pulpfiction-woman.jpg",
+    target: "/filmface/posters/pulpfiction-woman.jpg",
   },
-
-  // 🔥 OSCAR
   {
     thumb: "/thumbs/oscars-man-awards1.jpg",
     example: "/examples/oscars-man-awards1-example.jpg",
-    target: "/posters/oscars-man-awards1.jpg",
+    target: "/filmface/posters/oscars-man-awards1.jpg",
   },
 ];
 
