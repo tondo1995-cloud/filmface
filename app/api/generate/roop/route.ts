@@ -22,22 +22,34 @@ function toPublicUrl(url: string) {
 async function getBuffer(output: any): Promise<Buffer> {
   if (!output) throw new Error("Output vuoto");
 
+  // 👉 stringa diretta
   if (typeof output === "string") {
     const res = await fetch(output);
-    if (!res.ok) throw new Error("Fetch output fallito");
     return Buffer.from(await res.arrayBuffer());
   }
 
+  // 👉 array
   if (Array.isArray(output)) {
     return getBuffer(output[0]);
   }
 
-  if (output?.url) {
+  // 👉 oggetto con url
+  if (output?.url && typeof output.url === "string") {
     const res = await fetch(output.url);
-    if (!res.ok) throw new Error("Fetch output.url fallito");
     return Buffer.from(await res.arrayBuffer());
   }
 
+  // 👉 🔥 CASO CRITICO: oggetto strano replicato
+  if (output?.toString) {
+    const str = output.toString();
+
+    if (str.startsWith("http")) {
+      const res = await fetch(str);
+      return Buffer.from(await res.arrayBuffer());
+    }
+  }
+
+  // 👉 stream
   if (output instanceof ReadableStream) {
     const reader = output.getReader();
     const chunks: Uint8Array[] = [];
@@ -48,14 +60,10 @@ async function getBuffer(output: any): Promise<Buffer> {
       chunks.push(value);
     }
 
-    const buffer = Buffer.concat(chunks);
-
-    if (!buffer.length) throw new Error("Stream vuoto");
-
-    return buffer;
+    return Buffer.concat(chunks);
   }
 
-  console.error("❌ OUTPUT NON SUPPORTATO:", output);
+  console.error("❌ OUTPUT NON GESTITO:", output);
   throw new Error("Formato output ROOP non gestito");
 }
 
