@@ -108,10 +108,9 @@ async function uploadToCloudinary(buffer: Buffer): Promise<string> {
         file: `data:image/jpeg;base64,${base64}`,
         upload_preset: process.env.CLOUDINARY_UPLOAD_PRESET,
 
-        // 🔥 FIX CRITICO
+        // 🔥 SOLO PARAMETRI PERMESSI
         folder: "filmface/generated",
-        use_filename: false,
-        unique_filename: true,
+        public_id: `gen_${Date.now()}`,
       }),
     }
   );
