@@ -27,7 +27,9 @@ export default function CustomContent() {
 const poster = rawPoster ? decodeURIComponent(rawPoster) : null;
 
   // 🔥 QUI AVVIENE LA CONVERSIONE CRITICA
-  const cloudPoster = poster ? posterMap[poster] : null;
+  const cloudPoster = poster
+  ? `https://res.cloudinary.com/daklqmlsf/image/upload${poster}`
+  : null;
 
   const [faceFile, setFaceFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
