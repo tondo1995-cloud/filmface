@@ -22,31 +22,29 @@ function toPublicUrl(url: string) {
 async function getBuffer(output: any): Promise<Buffer> {
   if (!output) throw new Error("Output vuoto");
 
-  // 👉 stringa diretta
-  if (typeof output === "string") {
-    const res = await fetch(output);
-    return Buffer.from(await res.arrayBuffer());
-  }
-
   // 👉 array
   if (Array.isArray(output)) {
     return getBuffer(output[0]);
   }
 
-  // 👉 oggetto con url
-  if (output?.url && typeof output.url === "string") {
-    const res = await fetch(output.url);
+  // 👉 string URL (caso vecchio)
+  if (typeof output === "string" && output.startsWith("http")) {
+    const res = await fetch(output);
     return Buffer.from(await res.arrayBuffer());
   }
 
-  // 👉 🔥 CASO CRITICO: oggetto strano replicato
-  if (output?.toString) {
-    const str = output.toString();
+  // 👉 oggetto replicato moderno (FileOutput)
+  if (output?.url && typeof output.url === "function") {
+    const realUrl = output.url().toString();
 
-    if (str.startsWith("http")) {
-      const res = await fetch(str);
-      return Buffer.from(await res.arrayBuffer());
-    }
+    const res = await fetch(realUrl);
+    return Buffer.from(await res.arrayBuffer());
+  }
+
+  // 👉 oggetto con url string
+  if (output?.url && typeof output.url === "string") {
+    const res = await fetch(output.url);
+    return Buffer.from(await res.arrayBuffer());
   }
 
   // 👉 stream
