@@ -23,34 +23,34 @@ const posters: Poster[] = [
   {
     thumb: "/thumbs/wolf-dottore-del-b.jpg",
     example: "/examples/wolf-dottore-del-b-example.jpg",
-    target: "/filmface/posters/wolf-dottore-del-b.jpg",
+    target: "/posters/wolf-dottore-del-b.jpg",
   },
   {
     thumb: "/thumbs/scusateilritardo-troisi.jpg",
     example: "/examples/scusateilritardo-troisi-example.jpg",
-    target: "/filmface/posters/scusateilritardo-troisi.jpg",
+    target: "/posters/scusateilritardo-troisi.jpg",
   },
   {
     thumb: "/thumbs/scusateilritardo-woman.jpg",
     example: "/examples/scusateilritardo-woman-example.jpg",
-    target: "/filmface/posters/scusateilritardo-woman.jpg",
+    target: "/posters/scusateilritardo-woman.jpg",
   },
   {
     thumb: "/thumbs/pulpfiction-man.jpg",
     example: "/examples/pulpfiction-man-example.jpg",
-    target: "/filmface/posters/pulpfiction-man.jpg",
+    target: "/posters/pulpfiction-man.jpg",
   },
   {
     thumb: "/thumbs/pulpfiction-woman.jpg",
     example: "/examples/pulpfiction-woman-example.jpg",
-    target: "/filmface/posters/pulpfiction-woman.jpg",
+    target: "/posters/pulpfiction-woman.jpg",
   },
 
-  // 🔥 NUOVO POSTER OSCAR
+  // 🔥 OSCAR
   {
     thumb: "/thumbs/oscars-man-awards1.jpg",
-    example: "/examples/oscars-man-awards1-example.jpg", // se manca vedi sotto fallback
-    target: "/filmface/posters/oscars-man-awards1.jpg",
+    example: "/examples/oscars-man-awards1-example.jpg",
+    target: "/posters/oscars-man-awards1.jpg",
   },
 ];
 
@@ -113,13 +113,9 @@ export default function Home() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const check = () => {
-      setIsMobile(window.innerWidth < 900);
-    };
-
+    const check = () => setIsMobile(window.innerWidth < 900);
     check();
     window.addEventListener("resize", check);
-
     return () => window.removeEventListener("resize", check);
   }, []);
 
@@ -212,11 +208,11 @@ function PosterBlock({ p, router }: PosterBlockProps) {
       });
     };
 
-    const timeout = window.setTimeout(update, 80);
+    const timeout = setTimeout(update, 80);
     window.addEventListener("resize", update);
 
     return () => {
-      window.clearTimeout(timeout);
+      clearTimeout(timeout);
       window.removeEventListener("resize", update);
     };
   }, []);
@@ -224,14 +220,12 @@ function PosterBlock({ p, router }: PosterBlockProps) {
   return (
     <div style={styles.block}>
       <div style={styles.row} ref={rowRef}>
-        <img src={p.thumb} style={styles.posterLeft} loading="lazy" alt="" />
+        <img src={p.thumb} style={styles.posterLeft} />
 
         <img
-          src={p.example || p.thumb} // 🔥 fallback sicurezza
+          src={p.example}
           style={styles.posterRight}
           ref={rightRef}
-          loading="lazy"
-          alt=""
         />
 
         <img
@@ -242,7 +236,6 @@ function PosterBlock({ p, router }: PosterBlockProps) {
             left: pos.x,
             top: pos.y,
           }}
-          alt=""
         />
       </div>
 
