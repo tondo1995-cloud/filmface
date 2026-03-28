@@ -133,7 +133,7 @@ const styles: any = {
   page: {
     minHeight: "100vh",
     background: "#0f0f0f",
-    padding: 40,
+    padding: "40px 16px",
     textAlign: "center",
     color: "white",
     fontFamily: "var(--font-inter)",
@@ -146,30 +146,38 @@ const styles: any = {
   },
 
   title: {
-    fontSize: 42,
+    fontSize: 36,
     fontWeight: 700,
     fontFamily: "var(--font-grotesk)",
   },
 
   subtitle: {
     color: "#aaa",
-    marginBottom: 40,
+    marginBottom: 30,
     marginTop: 10,
   },
 
+  // 🔥 MOBILE FIRST → 1 PER RIGA
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
-    gap: 60,
+    gridTemplateColumns: "1fr",
+    gap: 40,
     maxWidth: 1100,
     margin: "0 auto",
+  },
+
+  // 🔥 DESKTOP → 3 PER RIGA
+  "@media (min-width: 900px)": {
+    grid: {
+      gridTemplateColumns: "repeat(3, 1fr)",
+    },
   },
 
   block: {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    gap: 20,
+    gap: 16,
   },
 
   row: {
@@ -179,34 +187,39 @@ const styles: any = {
     justifyContent: "center",
   },
 
+  // 🔥 MOBILE: immagini fluide
   posterLeft: {
-    width: 150,
+    width: "40%",
+    maxWidth: 140,
     objectFit: "cover",
     boxShadow: "0 10px 25px rgba(0,0,0,0.6)",
   },
 
   posterRight: {
-    width: 230,
-    marginLeft: -25,
+    width: "60%",
+    maxWidth: 220,
+    marginLeft: -20,
     objectFit: "cover",
     boxShadow: "0 20px 40px rgba(0,0,0,0.7)",
   },
 
   arrowOverlay: {
     position: "absolute",
-    width: 80,
+    width: 60,
     pointerEvents: "none",
     zIndex: 3,
   },
 
   button: {
-    padding: "16px 42px",
+    padding: "14px 20px",
     borderRadius: 14,
     border: "none",
     background: "linear-gradient(135deg, #6c5cff, #8a7dff)",
     color: "white",
     cursor: "pointer",
     fontWeight: 700,
-    fontSize: 15,
+    fontSize: 14,
+    width: "100%",
+    maxWidth: 280,
   },
 };
