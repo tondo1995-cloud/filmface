@@ -34,6 +34,19 @@ const posters = [
 export default function Home() {
   const router = useRouter();
 
+  const [isMobile, setIsMobile] = useState(true);
+
+  useEffect(() => {
+    const check = () => {
+      setIsMobile(window.innerWidth < 900);
+    };
+
+    check();
+    window.addEventListener("resize", check);
+
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   return (
     <div style={styles.page}>
       <p style={styles.hook}>
@@ -46,7 +59,12 @@ export default function Home() {
         Metti la faccia del tuo amico in un film in 5 secondi
       </p>
 
-      <div style={styles.grid}>
+      <div
+        style={{
+          ...styles.grid,
+          gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)",
+        }}
+      >
         {posters.map((p, i) => (
           <PosterBlock key={i} p={p} router={router} />
         ))}
@@ -157,20 +175,11 @@ const styles: any = {
     marginTop: 10,
   },
 
-  // 🔥 MOBILE FIRST → 1 PER RIGA
   grid: {
     display: "grid",
-    gridTemplateColumns: "1fr",
     gap: 40,
     maxWidth: 1100,
     margin: "0 auto",
-  },
-
-  // 🔥 DESKTOP → 3 PER RIGA
-  "@media (min-width: 900px)": {
-    grid: {
-      gridTemplateColumns: "repeat(3, 1fr)",
-    },
   },
 
   block: {
@@ -187,7 +196,6 @@ const styles: any = {
     justifyContent: "center",
   },
 
-  // 🔥 MOBILE: immagini fluide
   posterLeft: {
     width: "40%",
     maxWidth: 140,
