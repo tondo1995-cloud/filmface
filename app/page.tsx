@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useEffect, useState, CSSProperties } from "react";
 
 type Poster = {
-  source: string;
+  thumb: string; // 🔥 cambiato
   example: string;
   target: string;
 };
@@ -21,27 +21,27 @@ type Review = {
 
 const posters: Poster[] = [
   {
-    source: "/posters/wolf-dottore-del-b.jpg",
+    thumb: "/thumbs/wolf-dottore-del-b.jpg",
     example: "/examples/wolf-dottore-del-b-example.jpg",
     target: "/filmface/posters/wolf-dottore-del-b.jpg",
   },
   {
-    source: "/posters/scusateilritardo-troisi.jpg",
+    thumb: "/thumbs/scusateilritardo-troisi.jpg",
     example: "/examples/scusateilritardo-troisi-example.jpg",
     target: "/filmface/posters/scusateilritardo-troisi.jpg",
   },
   {
-    source: "/posters/scusateilritardo-woman.jpg",
+    thumb: "/thumbs/scusateilritardo-woman.jpg",
     example: "/examples/scusateilritardo-woman-example.jpg",
     target: "/filmface/posters/scusateilritardo-woman.jpg",
   },
   {
-    source: "/posters/pulpfiction-man.jpg",
+    thumb: "/thumbs/pulpfiction-man.jpg",
     example: "/examples/pulpfiction-man-example.jpg",
     target: "/filmface/posters/pulpfiction-man.jpg",
   },
   {
-    source: "/posters/pulpfiction-woman.jpg",
+    thumb: "/thumbs/pulpfiction-woman.jpg",
     example: "/examples/pulpfiction-woman-example.jpg",
     target: "/filmface/posters/pulpfiction-woman.jpg",
   },
@@ -88,12 +88,8 @@ function ReviewsTicker() {
 
       <style jsx>{`
         @keyframes scrollTicker {
-          from {
-            transform: translateX(0);
-          }
-          to {
-            transform: translateX(-50%);
-          }
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
         }
       `}</style>
     </>
@@ -117,7 +113,9 @@ export default function Home() {
 
   return (
     <div style={styles.page}>
-      <p style={styles.hook}>😂 Il regalo più stupido (e perfetto) di sempre</p>
+      <p style={styles.hook}>
+        😂 Il regalo più stupido (e perfetto) di sempre
+      </p>
 
       <h1 style={styles.title}>FilmFace</h1>
 
@@ -181,8 +179,9 @@ function PosterBlock({ p, router }: PosterBlockProps) {
     <div style={styles.block}>
       <div style={styles.row} ref={rowRef}>
         <img
-          src={p.source}
+          src={p.thumb} // 🔥 cambiato
           style={styles.posterLeft}
+          loading="lazy"
           onError={(e) => {
             e.currentTarget.style.display = "none";
           }}
@@ -193,6 +192,7 @@ function PosterBlock({ p, router }: PosterBlockProps) {
           src={p.example}
           style={styles.posterRight}
           ref={rightRef}
+          loading="lazy"
           onError={(e) => {
             e.currentTarget.style.display = "none";
           }}
@@ -279,14 +279,12 @@ const styles: Record<string, CSSProperties> = {
     color: "#FFD700",
     fontSize: 14,
     marginBottom: 4,
-    lineHeight: 1,
   },
 
   tickerText: {
     fontSize: 13,
     opacity: 0.9,
     textAlign: "center",
-    lineHeight: 1.2,
   },
 
   grid: {
