@@ -56,6 +56,10 @@ const posters: Poster[] = [
     target: "/filmface/posters/pulpfiction-woman.jpg",
   },
   {
+    thumb: "/thumbs/oscars-woman-awards1.jpg",
+    example: "/examples/oscars-woman-awards1-example.jpg",
+    target: "/filmface/posters/oscars-woman-awards1.jpg",
+  },  {
     thumb: "/thumbs/oscars-man-awards1.jpg",
     example: "/examples/oscars-man-awards1-example.jpg",
     target: "/filmface/posters/oscars-man-awards1.jpg",
