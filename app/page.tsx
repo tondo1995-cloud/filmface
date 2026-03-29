@@ -21,11 +21,6 @@ type Review = {
 
 const posters: Poster[] = [
   {
-    thumb: "/thumbs/trainspotting-man-1.jpg",
-    example: "/examples/trainspotting-man-1-example.jpg",
-    target: "/filmface/posters/trainspotting-man-1.jpg",
-  },
-  {
     thumb: "/thumbs/wolf-fumatore-dell-anno.jpg",
     example: "/examples/wolf-fumatore-dell-anno-example.jpg",
     target: "/filmface/posters/wolf-fumatore-dell-anno.jpg",
@@ -59,6 +54,11 @@ const posters: Poster[] = [
     thumb: "/thumbs/oscars-man-awards1.jpg",
     example: "/examples/oscars-man-awards1-example.jpg",
     target: "/filmface/posters/oscars-man-awards1.jpg",
+  },
+  {
+    thumb: "/thumbs/trainspotting-man-1.jpg",
+    example: "/examples/trainspotting-man-1-example.jpg",
+    target: "/filmface/posters/trainspotting-man-1.jpg",
   },
 ];
 
