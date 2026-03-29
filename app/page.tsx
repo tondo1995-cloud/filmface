@@ -21,6 +21,16 @@ type Review = {
 
 const posters: Poster[] = [
   {
+    thumb: "/thumbs/trainspotting-man-1.jpg",
+    example: "/examples/trainspotting-man-1-example.jpg",
+    target: "/filmface/posters/trainspotting-man-1.jpg",
+  },
+  {
+    thumb: "/thumbs/wolf-fumatore-dell-anno.jpg",
+    example: "/examples/wolf-fumatore-dell-anno-example.jpg",
+    target: "/filmface/posters/wolf-fumatore-dell-anno.jpg",
+  },
+  {
     thumb: "/thumbs/wolf-dottore-del-b.jpg",
     example: "/examples/wolf-dottore-del-b-example.jpg",
     target: "/filmface/posters/wolf-dottore-del-b.jpg",
