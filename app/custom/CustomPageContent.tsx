@@ -120,9 +120,6 @@ export default function CustomContent() {
   return (
     <div style={styles.page}>
       <div style={styles.container}>
-        <h1 style={styles.title}>
-          Trasforma il tuo amico in una leggenda
-        </h1>
 
         {/* 🔥 TOP SPLIT */}
         <div style={styles.topGrid}>
@@ -186,6 +183,7 @@ export default function CustomContent() {
             </div>
           </div>
         )}
+
       </div>
     </div>
   );
@@ -197,7 +195,7 @@ const styles: any = {
     background: "#0b0b0f",
     display: "flex",
     justifyContent: "center",
-    alignItems: "center",
+    alignItems: "flex-start", // 🔥 ALLINEATO IN ALTO
     color: "white",
     fontFamily: "var(--font-inter)",
   },
@@ -205,14 +203,8 @@ const styles: any = {
   container: {
     width: "100%",
     maxWidth: 700,
-    padding: 20,
+    padding: "20px 20px 40px", // 🔥 margine alto controllato
     textAlign: "center",
-  },
-
-  title: {
-    marginBottom: 20,
-    fontWeight: 700,
-    fontSize: 22,
   },
 
   topGrid: {
