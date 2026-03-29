@@ -121,8 +121,9 @@ export default function CustomContent() {
     <div style={styles.page}>
       <div style={styles.container}>
 
-        {/* 🔥 TOP SPLIT */}
+        {/* TOP SPLIT */}
         <div style={styles.topGrid}>
+          
           {/* POSTER */}
           <div style={styles.box}>
             {cloudPoster && (
@@ -154,7 +155,7 @@ export default function CustomContent() {
           </label>
         </div>
 
-        {/* 🔥 BUTTON */}
+        {/* BUTTON */}
         <button
           style={styles.button}
           onClick={handleGenerate}
@@ -163,10 +164,21 @@ export default function CustomContent() {
           {loading ? "Creazione in corso..." : "Genera ora gratis"}
         </button>
 
-        {/* 🔥 RESULT */}
+        {/* RESULT */}
         {result && (
           <div style={styles.result}>
-            <img src={result} style={styles.image} />
+            
+            {/* 🔥 WRAPPER PROTETTO */}
+            <div style={styles.imageWrapper}>
+              <img
+                src={result}
+                style={styles.image}
+                draggable={false}
+                onContextMenu={(e) => e.preventDefault()}
+                onDragStart={(e) => e.preventDefault()}
+              />
+              <div style={styles.protectionLayer} />
+            </div>
 
             <div style={styles.ctaBox}>
               <p style={styles.ctaText}>
@@ -195,7 +207,7 @@ const styles: any = {
     background: "#0b0b0f",
     display: "flex",
     justifyContent: "center",
-    alignItems: "flex-start", // 🔥 ALLINEATO IN ALTO
+    alignItems: "flex-start",
     color: "white",
     fontFamily: "var(--font-inter)",
   },
@@ -203,7 +215,7 @@ const styles: any = {
   container: {
     width: "100%",
     maxWidth: 700,
-    padding: "20px 20px 40px", // 🔥 margine alto controllato
+    padding: "20px 20px 40px",
     textAlign: "center",
   },
 
@@ -272,9 +284,22 @@ const styles: any = {
     marginTop: 30,
   },
 
+  imageWrapper: {
+    position: "relative",
+  },
+
   image: {
     width: "100%",
     borderRadius: 12,
+    userSelect: "none",
+    WebkitUserSelect: "none",
+    WebkitTouchCallout: "none",
+  },
+
+  protectionLayer: {
+    position: "absolute",
+    inset: 0,
+    background: "transparent",
   },
 
   ctaBox: {

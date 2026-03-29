@@ -93,7 +93,7 @@ function ReviewsTicker() {
     { rating: 5, text: "Story Instagram = 30 risposte" },
     { rating: 4, text: "vale anche solo per la reazione" },
     { rating: 5, text: "nessuna decrizione" },
-    { rating: 4.5, text: "sto spendendo milioni su questo sito help" },
+    { rating: 5, text: "sto spendendo milioni su questo sito help" },
   ];
 
   const loop = [...reviews, ...reviews];
