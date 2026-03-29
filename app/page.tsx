@@ -21,16 +21,6 @@ type Review = {
 
 const posters: Poster[] = [
   {
-    thumb: "/thumbs/wolf-fumatore-dell-anno.jpg",
-    example: "/examples/wolf-fumatore-dell-anno-example.jpg",
-    target: "/filmface/posters/wolf-fumatore-dell-anno.jpg",
-  },
-  {
-    thumb: "/thumbs/wolf-dottore-del-b.jpg",
-    example: "/examples/wolf-dottore-del-b-example.jpg",
-    target: "/filmface/posters/wolf-dottore-del-b.jpg",
-  },
-  {
     thumb: "/thumbs/scusateilritardo-troisi.jpg",
     example: "/examples/scusateilritardo-troisi-example.jpg",
     target: "/filmface/posters/scusateilritardo-troisi.jpg",
@@ -39,6 +29,16 @@ const posters: Poster[] = [
     thumb: "/thumbs/scusateilritardo-woman.jpg",
     example: "/examples/scusateilritardo-woman-example.jpg",
     target: "/filmface/posters/scusateilritardo-woman.jpg",
+  },
+  {
+    thumb: "/thumbs/wolf-fumatore-dell-anno.jpg",
+    example: "/examples/wolf-fumatore-dell-anno-example.jpg",
+    target: "/filmface/posters/wolf-fumatore-dell-anno.jpg",
+  },
+  {
+    thumb: "/thumbs/wolf-dottore-del-b.jpg",
+    example: "/examples/wolf-dottore-del-b-example.jpg",
+    target: "/filmface/posters/wolf-dottore-del-b.jpg",
   },
   {
     thumb: "/thumbs/pulpfiction-man.jpg",
