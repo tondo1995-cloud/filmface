@@ -21,6 +21,11 @@ type Review = {
 
 const posters: Poster[] = [
   {
+    thumb: "/thumbs/oscars-woman-visualizzaesparisce.jpg",
+    example: "/examples/oscars-woman-visualizzaesparisce-example.jpg",
+    target: "/filmface/posters/oscars-woman-visualizzaesparisce.jpg",
+  },
+  {
     thumb: "/thumbs/scusateilritardo-troisi.jpg",
     example: "/examples/scusateilritardo-troisi-example.jpg",
     target: "/filmface/posters/scusateilritardo-troisi.jpg",
