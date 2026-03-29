@@ -1,104 +1,60 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-
-type ApiGenerateResponse = {
-  preview?: string;
-  hd?: string;
-  error?: string;
-};
 
 export default function CustomContent() {
   const searchParams = useSearchParams();
-  const rawPoster = searchParams.get("poster") ?? null;
+  const rawPoster = searchParams.get("poster");
+  const poster = rawPoster ? decodeURIComponent(rawPoster) : null;
 
-  // decode defensively (in caso sia urlencoded)
-  const poster = useMemo(() => {
-    if (!rawPoster) return null;
-    try {
-      return decodeURIComponent(rawPoster);
-    } catch {
-      return rawPoster;
-    }
-  }, [rawPoster]);
-
-  // Cloudinary base (client-safe env vars must be NEXT_PUBLIC_*)
-  const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  const CLOUDINARY_BASE = CLOUD_NAME
-    ? `https://res.cloudinary.com/${CLOUD_NAME}/image/upload`
-    : "";
-
-  // If poster is an absolute url (startsWith http) use it directly,
-  // otherwise assume it's a path like "/filmface/posters/xxx.jpg" and prepend Cloudinary base.
-  const cloudPoster = useMemo(() => {
-    if (!poster) return null;
-    const trimmed = poster.trim();
-    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-      return trimmed;
-    }
-    const suffix = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
-    return CLOUDINARY_BASE ? `${CLOUDINARY_BASE}${suffix}` : null;
-  }, [poster, CLOUDINARY_BASE]);
+  const cloudPoster = poster
+    ? `https://res.cloudinary.com/daklqmlsf/image/upload${poster}`
+    : null;
 
   const [faceFile, setFaceFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [hdUrl, setHdUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // createObjectURL preview + cleanup
   useEffect(() => {
-    if (!faceFile) {
-      setPreview(null);
-      return;
-    }
+    if (!faceFile) return;
     const url = URL.createObjectURL(faceFile);
     setPreview(url);
-    return () => {
-      URL.revokeObjectURL(url);
-      setPreview(null);
-    };
+    return () => URL.revokeObjectURL(url);
   }, [faceFile]);
 
   const uploadToCloudinary = async (file: File) => {
-    const preset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-    if (!preset || !CLOUD_NAME)
-      throw new Error("Cloudinary config mancante (NEXT_PUBLIC_... vars).");
-
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("upload_preset", preset);
+    formData.append(
+      "upload_preset",
+      process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!
+    );
 
     const res = await fetch(
-      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
       {
         method: "POST",
         body: formData,
       }
     );
 
-    if (!res.ok) {
-      const txt = await res.text();
-      throw new Error(`Upload fallito: ${res.status} ${txt}`);
-    }
-
     const data = await res.json();
-    if (!data.secure_url) throw new Error("Upload fallito: missing secure_url");
-    return data.secure_url as string;
+    if (!data.secure_url) throw new Error("Upload fallito");
+
+    return data.secure_url;
   };
 
   const handleGenerate = async () => {
-    setErrorMsg(null);
-
     if (!faceFile) {
-      setErrorMsg("Carica una foto prima di generare.");
+      alert("Carica una foto");
       return;
     }
 
     if (!cloudPoster) {
-      setErrorMsg("Poster non valido o Cloudinary non configurato correttamente.");
+      alert("Poster non valido");
       return;
     }
 
@@ -107,14 +63,8 @@ export default function CustomContent() {
     setHdUrl(null);
 
     try {
-      if (faceFile.size > 15 * 1024 * 1024) {
-        throw new Error("File troppo grande. Limite 15MB.");
-      }
-
-      // 1) upload volto
       const faceUrl = await uploadToCloudinary(faceFile);
 
-      // 2) call generation endpoint (server handles Replicate/ROOP)
       const res = await fetch("/api/generate/roop", {
         method: "POST",
         headers: {
@@ -126,32 +76,23 @@ export default function CustomContent() {
         }),
       });
 
-      const data: ApiGenerateResponse = await res.json();
+      const data = await res.json();
 
-      if (!res.ok) {
-        const msg = data?.error ?? `Errore server: ${res.status}`;
-        throw new Error(msg);
+      if (!res.ok || !data.preview) {
+        throw new Error("Errore generazione");
       }
 
-      if (!data.preview) throw new Error("Generazione fallita (nessuna preview).");
-
-      setResult(data.preview || null);
-      setHdUrl(data.hd || null);
-    } catch (err: any) {
-      console.error("generate error", err);
-      setErrorMsg(err?.message ?? "Errore durante la generazione.");
-    } finally {
-      setLoading(false);
+      setResult(data.preview);
+      setHdUrl(data.hd);
+    } catch (err) {
+      alert("Errore generazione");
     }
+
+    setLoading(false);
   };
 
   const handleCheckout = async () => {
-    setErrorMsg(null);
-
-    if (!hdUrl) {
-      setErrorMsg("HD non disponibile. Genera prima la preview.");
-      return;
-    }
+    if (!hdUrl) return;
 
     try {
       const res = await fetch("/api/checkout", {
@@ -164,84 +105,66 @@ export default function CustomContent() {
         }),
       });
 
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(`Checkout fallito: ${res.status} ${txt}`);
-      }
-
       const data = await res.json();
+
       if (data.url) {
         window.location.href = data.url;
       } else {
-        throw new Error("Risposta checkout non valida.");
+        alert("Errore pagamento");
       }
-    } catch (err: any) {
-      console.error("checkout error", err);
-      setErrorMsg(err?.message ?? "Errore pagamento.");
+    } catch {
+      alert("Errore pagamento");
     }
   };
 
   return (
     <div style={styles.page}>
       <div style={styles.container}>
-        <h1 style={styles.title}>Trasforma il tuo amico in una leggenda</h1>
-
-        {!cloudPoster && (
-          <div style={styles.warning}>
-            Poster non valido. Controlla il link dalla home o passa a un poster valido.
-          </div>
-        )}
+        <h1 style={styles.title}>
+          Trasforma il tuo amico in una leggenda
+        </h1>
 
         {cloudPoster && (
-          <img
-            src={cloudPoster}
-            alt="Poster target"
-            style={styles.poster}
-            onError={() => setErrorMsg("Impossibile caricare il poster selezionato.")}
-          />
+          <img src={cloudPoster} style={styles.poster} />
         )}
 
-        <div style={{ marginTop: 12 }} />
-
         <label style={styles.uploadButton}>
+          {faceFile ? "Volto caricato ✅" : "Carica una foto"}
           <input
             type="file"
             accept="image/*"
-            onChange={(e) => {
-              setErrorMsg(null);
-              const f = e.target.files?.[0] ?? null;
-              setFaceFile(f);
-            }}
+            onChange={(e) =>
+              setFaceFile(e.target.files?.[0] || null)
+            }
             style={{ display: "none" }}
           />
-          {faceFile ? "Volto caricato ✅" : "Carica una foto"}
         </label>
 
-        {preview && <img src={preview} alt="preview" style={styles.preview} />}
-
-        {errorMsg && <div style={styles.errorBox}>{errorMsg}</div>}
+        {preview && (
+          <img src={preview} style={styles.preview} />
+        )}
 
         <button
-          style={{ ...styles.button, opacity: loading ? 0.8 : 1 }}
+          style={styles.button}
           onClick={handleGenerate}
           disabled={loading}
         >
-          {loading ? "Creazione in corso..." : "Genera gratis"}
+          {loading
+            ? "Creazione in corso..."
+            : "Genera gratis"}
         </button>
 
         {result && (
           <div style={styles.result}>
-            <img src={result} alt="preview result" style={styles.image} />
+            <img src={result} style={styles.image} />
 
             <div style={styles.ctaBox}>
-              <p style={styles.ctaText}>Scarica la versione HD senza watermark</p>
+              <p style={styles.ctaText}>
+                Scarica la versione HD senza watermark
+              </p>
 
               <button
-                style={{
-                  ...styles.unlockButton,
-                  opacity: hdUrl ? 1 : 0.8,
-                  cursor: hdUrl ? "pointer" : "not-allowed",
-                }}
+                style={styles.unlockButton}
                 onClick={handleCheckout}
                 disabled={!hdUrl}
               >
@@ -255,7 +178,7 @@ export default function CustomContent() {
   );
 }
 
-const styles: Record<string, any> = {
+const styles: any = {
   page: {
     minHeight: "100vh",
     background: "#0b0b0f",
@@ -264,7 +187,6 @@ const styles: Record<string, any> = {
     alignItems: "center",
     color: "white",
     fontFamily: "var(--font-inter)",
-    padding: 20,
   },
 
   container: {
@@ -273,35 +195,24 @@ const styles: Record<string, any> = {
   },
 
   title: {
-    marginBottom: 12,
+    marginBottom: 20,
     fontWeight: 700,
-    fontSize: 20,
-  },
-
-  warning: {
-    marginBottom: 12,
-    padding: 10,
-    background: "#2b1a1a",
-    borderRadius: 8,
-    color: "#ffcc00",
   },
 
   poster: {
     width: "100%",
     borderRadius: 12,
-    marginBottom: 12,
-    boxShadow: "0 10px 30px rgba(0,0,0,0.6)",
+    marginBottom: 20,
   },
 
   uploadButton: {
-    display: "inline-block",
-    padding: 12,
+    display: "block",
+    padding: 14,
     borderRadius: 12,
     background: "white",
     color: "black",
     fontWeight: 600,
     cursor: "pointer",
-    marginTop: 8,
   },
 
   preview: {
@@ -311,30 +222,28 @@ const styles: Record<string, any> = {
   },
 
   button: {
-    marginTop: 18,
-    padding: 12,
+    marginTop: 20,
+    padding: 14,
     borderRadius: 12,
     background: "#6c5cff",
     color: "white",
     width: "100%",
     cursor: "pointer",
     fontWeight: 700,
-    border: "none",
   },
 
   result: {
-    marginTop: 22,
+    marginTop: 30,
   },
 
   image: {
     width: "100%",
     borderRadius: 12,
-    boxShadow: "0 10px 30px rgba(0,0,0,0.6)",
   },
 
   ctaBox: {
-    marginTop: 14,
-    padding: 14,
+    marginTop: 15,
+    padding: 16,
     background: "#111",
     borderRadius: 12,
   },
@@ -342,25 +251,16 @@ const styles: Record<string, any> = {
   ctaText: {
     fontSize: 14,
     marginBottom: 10,
-    opacity: 0.9,
+    opacity: 0.8,
   },
 
   unlockButton: {
-    padding: 12,
+    padding: 14,
     borderRadius: 10,
     background: "#00c853",
     color: "white",
-    fontWeight: 800,
+    fontWeight: "bold",
     cursor: "pointer",
     width: "100%",
-    border: "none",
-  },
-
-  errorBox: {
-    marginTop: 12,
-    padding: 10,
-    background: "#3a1f1f",
-    color: "#ff7b7b",
-    borderRadius: 8,
   },
 };
