@@ -194,7 +194,7 @@ export default function Home() {
         />
 
         <p style={styles.subtitle}>
-          Metti la faccia del tuo amico in un film in 5 secondi
+          RENDI I TUOI AMICI UN MEME IN 5 SECONDI
         </p>
 
         <ReviewsTicker />
@@ -277,7 +277,7 @@ function PosterBlock({ p, router }: PosterBlockProps) {
           router.push(`/custom?poster=${encodeURIComponent(p.target)}`)
         }
       >
-        PERSONALIZZA ORA GRATIS
+        PROVA ORA GRATIS
       </button>
     </div>
   );
