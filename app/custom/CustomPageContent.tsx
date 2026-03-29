@@ -84,7 +84,7 @@ export default function CustomContent() {
 
       setResult(data.preview);
       setHdUrl(data.hd);
-    } catch (err) {
+    } catch {
       alert("Errore generazione");
     }
 
@@ -124,36 +124,49 @@ export default function CustomContent() {
           Trasforma il tuo amico in una leggenda
         </h1>
 
-        {cloudPoster && (
-          <img src={cloudPoster} style={styles.poster} />
-        )}
+        {/* 🔥 TOP SPLIT */}
+        <div style={styles.topGrid}>
+          {/* POSTER */}
+          <div style={styles.box}>
+            {cloudPoster && (
+              <img src={cloudPoster} style={styles.poster} />
+            )}
+          </div>
 
-        <label style={styles.uploadButton}>
-          {faceFile ? "Volto caricato ✅" : "Carica una foto"}
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) =>
-              setFaceFile(e.target.files?.[0] || null)
-            }
-            style={{ display: "none" }}
-          />
-        </label>
+          {/* UPLOAD */}
+          <label style={styles.uploadBox}>
+            {preview ? (
+              <img src={preview} style={styles.previewFull} />
+            ) : (
+              <>
+                <div style={styles.uploadIcon}>＋</div>
+                <p style={styles.uploadText}>
+                  Carica la foto del volto da applicare
+                </p>
+              </>
+            )}
 
-        {preview && (
-          <img src={preview} style={styles.preview} />
-        )}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) =>
+                setFaceFile(e.target.files?.[0] || null)
+              }
+              style={{ display: "none" }}
+            />
+          </label>
+        </div>
 
+        {/* 🔥 BUTTON */}
         <button
           style={styles.button}
           onClick={handleGenerate}
           disabled={loading}
         >
-          {loading
-            ? "Creazione in corso..."
-            : "Genera gratis"}
+          {loading ? "Creazione in corso..." : "Genera ora gratis"}
         </button>
 
+        {/* 🔥 RESULT */}
         {result && (
           <div style={styles.result}>
             <img src={result} style={styles.image} />
@@ -190,44 +203,75 @@ const styles: any = {
   },
 
   container: {
-    width: 360,
+    width: "100%",
+    maxWidth: 700,
+    padding: 20,
     textAlign: "center",
   },
 
   title: {
     marginBottom: 20,
     fontWeight: 700,
+    fontSize: 22,
+  },
+
+  topGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: 16,
+    marginBottom: 20,
+  },
+
+  box: {
+    background: "#111",
+    borderRadius: 12,
+    overflow: "hidden",
+    aspectRatio: "2/3",
   },
 
   poster: {
     width: "100%",
-    borderRadius: 12,
-    marginBottom: 20,
+    height: "100%",
+    objectFit: "cover",
   },
 
-  uploadButton: {
-    display: "block",
-    padding: 14,
+  uploadBox: {
+    background: "#111",
     borderRadius: 12,
-    background: "white",
-    color: "black",
-    fontWeight: 600,
+    aspectRatio: "2/3",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
     cursor: "pointer",
+    border: "2px dashed #333",
+    padding: 10,
   },
 
-  preview: {
-    width: 100,
-    marginTop: 10,
-    borderRadius: 10,
+  uploadIcon: {
+    fontSize: 40,
+    marginBottom: 10,
+  },
+
+  uploadText: {
+    fontSize: 13,
+    opacity: 0.7,
+  },
+
+  previewFull: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
   },
 
   button: {
-    marginTop: 20,
-    padding: 14,
+    marginTop: 10,
+    padding: 16,
     borderRadius: 12,
     background: "#6c5cff",
     color: "white",
     width: "100%",
+    maxWidth: 300,
     cursor: "pointer",
     fontWeight: 700,
   },
