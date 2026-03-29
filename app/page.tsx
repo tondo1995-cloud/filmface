@@ -315,7 +315,7 @@ const styles: Record<string, CSSProperties> = {
   },
 
   logo: {
-    width: 180,
+    width: 220,
     maxWidth: "80%",
     margin: "10px auto 20px",
     display: "block",
