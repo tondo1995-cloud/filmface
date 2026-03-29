@@ -21,11 +21,6 @@ type Review = {
 
 const posters: Poster[] = [
   {
-    thumb: "/thumbs/oscars-woman-visualizzaesparisce.jpg",
-    example: "/examples/oscars-woman-visualizzaesparisce-example.jpg",
-    target: "/filmface/posters/oscars-woman-visualizzaesparisce.jpg",
-  },
-  {
     thumb: "/thumbs/scusateilritardo-troisi.jpg",
     example: "/examples/scusateilritardo-troisi-example.jpg",
     target: "/filmface/posters/scusateilritardo-troisi.jpg",
@@ -34,6 +29,16 @@ const posters: Poster[] = [
     thumb: "/thumbs/scusateilritardo-woman.jpg",
     example: "/examples/scusateilritardo-woman-example.jpg",
     target: "/filmface/posters/scusateilritardo-woman.jpg",
+  },
+  {
+    thumb: "/thumbs/oscars-woman-sottona-malesseri.jpg",
+    example: "/examples/oscars-woman-sottona-malesseri-example.jpg",
+    target: "/filmface/posters/oscars-woman-sottona-malesseri.jpg",
+  },
+  {
+    thumb: "/thumbs/oscars-woman-visualizzaesparisce.jpg",
+    example: "/examples/oscars-woman-visualizzaesparisce-example.jpg",
+    target: "/filmface/posters/oscars-woman-visualizzaesparisce.jpg",
   },
   {
     thumb: "/thumbs/wolf-fumatore-dell-anno.jpg",
@@ -68,6 +73,16 @@ const posters: Poster[] = [
     thumb: "/thumbs/trainspotting-man-1.jpg",
     example: "/examples/trainspotting-man-1-example.jpg",
     target: "/filmface/posters/trainspotting-man-1.jpg",
+  },
+  {
+    thumb: "/thumbs/oscars-woman-overthinker.jpg",
+    example: "/examples/oscars-woman-overthinker-example.jpg",
+    target: "/filmface/posters/oscars-woman-overthinker.jpg",
+  },
+  {
+    thumb: "/thumbs/oscars-woman-arrivo-fra-5.jpg",
+    example: "/examples/oscars-woman-arrivo-fra-5-example.jpg",
+    target: "/filmface/posters/oscars-woman-arrivo-fra-5.jpg",
   },
 ];
 

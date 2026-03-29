@@ -1,3 +1,5 @@
+"use client";
+
 export const dynamic = "force-dynamic";
 
 import { Suspense } from "react";
@@ -24,7 +26,7 @@ export default function CustomPage() {
   );
 }
 
-const styles: Record<string, any> = {
+const styles = {
   page: {
     minHeight: "100vh",
     background: "#0f0f0f",
@@ -40,7 +42,7 @@ const styles: Record<string, any> = {
   },
 
   loaderInner: {
-    textAlign: "center",
+    textAlign: "center" as const,
   },
 
   loaderTitle: {
