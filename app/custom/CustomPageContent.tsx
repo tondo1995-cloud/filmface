@@ -190,7 +190,7 @@ export default function CustomContent() {
                 onClick={handleCheckout}
                 disabled={!hdUrl}
               >
-                Sblocca HD — 0,50€
+                Sblocca HD — 2,99€
               </button>
             </div>
           </div>

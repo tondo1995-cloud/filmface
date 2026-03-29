@@ -50,7 +50,7 @@ export async function POST(req: Request) {
               name: "Download locandina HD",
               description: "Immagine generata con FilmFace",
             },
-            unit_amount: 50, // 0.50€
+            unit_amount: 299, // 2.99€
           },
           quantity: 1,
         },
