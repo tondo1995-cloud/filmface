@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
+import Script from "next/script";
 import "./globals.css";
 
 // 🔥 FONT
@@ -13,7 +15,7 @@ const grotesk = Space_Grotesk({
   variable: "--font-grotesk",
 });
 
-// 🔥 METADATA (non lasciare roba default)
+// 🔥 METADATA
 export const metadata: Metadata = {
   title: "FilmFace",
   description: "Metti la faccia del tuo amico in un film in pochi secondi",
@@ -30,30 +32,30 @@ export default function RootLayout({
       className={`${inter.variable} ${grotesk.variable}`}
     >
       <body
-  style={{
-    fontFamily: "var(--font-inter)",
-    margin: 0,
-  }}
->
-  {/* Google Analytics */}
-  <script
-    async
-    src="https://www.googletagmanager.com/gtag/js?id=G-RCG961Z856"
-  ></script>
+        style={{
+          fontFamily: "var(--font-inter)",
+          margin: 0,
+        }}
+      >
+        {/* 🔥 GOOGLE ANALYTICS (CORRETTO) */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-RCG961Z856"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-RCG961Z856');
+          `}
+        </Script>
 
-  <script
-    dangerouslySetInnerHTML={{
-      __html: `
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-RCG961Z856');
-      `,
-    }}
-  />
+        {children}
 
-  {children}
-</body>
+        {/* 🔥 VERCEL ANALYTICS */}
+        <Analytics />
+      </body>
     </html>
   );
 }
